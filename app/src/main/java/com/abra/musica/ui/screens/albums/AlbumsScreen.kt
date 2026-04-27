@@ -5,10 +5,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -17,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.abra.musica.R
 import com.abra.musica.data.model.Album
+import com.abra.musica.ui.screens.albums.components.AlbumCard
 
 @Composable
 fun AlbumsScreen(
@@ -51,7 +55,7 @@ fun AlbumsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_album),
+                        imageVector = Icons.Default.Album,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp)
                     )
@@ -84,48 +88,4 @@ fun AlbumsScreen(
     }
 }
 
-@Composable
-fun AlbumCard(
-    album: Album,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // Album art
-            AsyncImage(
-                model = album.artUri,
-                contentDescription = stringResource(R.string.album_art_desc, album.title),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(1f),
-                placeholder = painterResource(R.drawable.ic_album_placeholder),
-                error = painterResource(R.drawable.ic_album_placeholder)
-            )
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Album info
-            Text(
-                text = album.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2
-            )
-            Text(
-                text = album.artist,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
-            Text(
-                text = stringResource(R.string.song_count, album.songCount),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}

@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -32,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -68,8 +72,8 @@ fun SongListItem(
             modifier = Modifier
                 .size(48.dp)
                 .padding(end = 16.dp),
-            placeholder = painterResource(R.drawable.ic_album_placeholder),
-            error = painterResource(R.drawable.ic_album_placeholder)
+            placeholder = rememberVectorPainter(Icons.Default.Album),
+            error = rememberVectorPainter(Icons.Default.Album)
         )
 
         // Song info
@@ -105,7 +109,7 @@ fun SongListItem(
             var showMenu by remember { mutableStateOf(false) }
             IconButton(onClick = { showMenu = true }) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_more_vert),
+                    imageVector = Icons.Default.MoreVert,
                     contentDescription = stringResource(R.string.more_options)
                 )
             }
@@ -165,9 +169,9 @@ fun SongListItem(
 @Composable
 fun PlayingIndicator(modifier: Modifier = Modifier) {
     // Simple animated playing indicator - 3 bars
-    Row(
+    Column (
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(2.dp)
+        verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         repeat(3) { index ->
             AnimatedVisibility (
@@ -175,11 +179,11 @@ fun PlayingIndicator(modifier: Modifier = Modifier) {
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                val height = (8 + index * 4).dp
+                val width = (8 + (3-index) * 4).dp
                 Box(
                     modifier = Modifier
-                        .width(3.dp)
-                        .height(height)
+                        .width(width)
+                        .height(3.dp)
                         .background(
                             color = MaterialTheme.colorScheme.primary,
                             shape = RoundedCornerShape(1.5.dp)

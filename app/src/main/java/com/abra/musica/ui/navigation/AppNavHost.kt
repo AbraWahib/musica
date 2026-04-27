@@ -62,7 +62,9 @@ fun AppNavHost(
             }
         }
         composable(Screen.NowPlaying.route) {
-            NowPlayingScreen()
+            NowPlayingScreen(
+                onBackClick = { navController.popBackStack() }
+            )
         }
         composable(Screen.Search.route) {
             // TODO: SearchScreen()

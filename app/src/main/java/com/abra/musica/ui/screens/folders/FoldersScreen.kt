@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,7 +51,7 @@ fun FoldersScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_folder),
+                        imageVector = Icons.Default.Folder,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp)
                     )
@@ -91,7 +93,7 @@ fun FolderCard(
     ) {
         // Folder icon
         Icon(
-            painter = painterResource(R.drawable.ic_folder),
+            imageVector = Icons.Default.Folder,
             contentDescription = null,
             modifier = Modifier
                 .size(48.dp)

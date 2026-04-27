@@ -3,6 +3,10 @@ package com.abra.musica.ui.screens.songs
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,18 +16,39 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
 import com.abra.musica.R
 import com.abra.musica.data.model.Song
-import com.abra.musica.data.model.albumArtUri
+import com.abra.musica.ui.components.SongListItem
+import com.abra.musica.ui.screens.songs.components.Events
 
 @Composable
 fun SongsScreen(
-    viewModel: SongsViewModel = hiltViewModel()
+   viewModel: SongsViewModel = hiltViewModel()
 ) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
     val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
+    val currentSong by viewModel.currentSong.collectAsStateWithLifecycle()
+    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
 
+    SongScreenContent(
+        songs = songs,
+        sortOrder = sortOrder,
+        currentSong = currentSong,
+        isPlaying = isPlaying,
+        onEvent = viewModel::onEvent,
+        onSortOrderChange = viewModel::setSortOrder
+    )
+}
+
+@Composable
+fun SongScreenContent(
+    songs: List<Song>,
+    sortOrder: SortOrder,
+    currentSong: Song?,
+    isPlaying: Boolean,
+    onEvent: (Events) -> Unit,
+    onSortOrderChange: (SortOrder) -> Unit
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         // Top bar with sort options
         Row(
@@ -41,7 +66,7 @@ fun SongsScreen(
             var showSortMenu by remember { mutableStateOf(false) }
             IconButton(onClick = { showSortMenu = true }) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_sort),
+                    imageVector = Icons.AutoMirrored.Filled.Sort,
                     contentDescription = stringResource(R.string.sort_by)
                 )
             }
@@ -50,11 +75,11 @@ fun SongsScreen(
                 expanded = showSortMenu,
                 onDismissRequest = { showSortMenu = false }
             ) {
-                SortOrder.values().forEach { order ->
+                SortOrder.entries.forEach { order ->
                     DropdownMenuItem(
                         text = { Text(order.displayName()) },
                         onClick = {
-                            viewModel.setSortOrder(order)
+                            onSortOrderChange(order)
                             showSortMenu = false
                         }
                     )
@@ -73,7 +98,7 @@ fun SongsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_music_note),
+                        imageVector = Icons.Default.MusicNote,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp)
                     )
@@ -90,56 +115,16 @@ fun SongsScreen(
         } else {
             // Songs list
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(songs) { song ->
-                    SongListItem(song = song)
+                items(songs, key = { it.id }) { song ->
+                    SongListItem(
+                        song = song,
+                        isPlaying = isPlaying && song.id == currentSong?.id,
+                        onClick = { onEvent(Events.OnSongClick(song)) }
+                    )
                 }
             }
         }
     }
-}
-
-@Composable
-fun SongListItem(song: Song) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        AsyncImage(
-            model = song.albumArtUri(),
-            contentDescription = stringResource(R.string.album_art_desc, song.album),
-            modifier = Modifier
-                .size(48.dp)
-                .padding(end = 16.dp),
-            placeholder = painterResource(R.drawable.ic_album_placeholder),
-            error = painterResource(R.drawable.ic_album_placeholder)
-        )
-
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = song.title,
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = "${song.artist} • ${song.album}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-
-        Text(
-            text = song.duration.formatDuration(),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-private fun Long.formatDuration(): String {
-    val minutes = this / 60000
-    val seconds = (this % 60000) / 1000
-    return "%d:%02d".format(minutes, seconds)
 }
 
 private fun SortOrder.displayName(): String {

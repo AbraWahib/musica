@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -55,7 +59,7 @@ fun PlaylistsScreen(
                 modifier = Modifier.size(48.dp)
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_add),
+                    imageVector = Icons.Default.Add,
                     contentDescription = stringResource(R.string.create_playlist)
                 )
             }
@@ -72,7 +76,8 @@ fun PlaylistsScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_playlist),
+                        imageVector = Icons.AutoMirrored.Filled.PlaylistPlay
+                        ,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp)
                     )
@@ -116,7 +121,7 @@ fun PlaylistCard(
     ) {
         // Playlist cover (placeholder - could show first song's album art)
         Icon(
-            painter = painterResource(R.drawable.ic_playlist),
+            imageVector = Icons.AutoMirrored.Filled.PlaylistPlay,
             contentDescription = null,
             modifier = Modifier
                 .size(48.dp)

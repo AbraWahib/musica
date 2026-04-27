@@ -3,6 +3,7 @@ package com.abra.musica.ui.player
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abra.musica.data.model.Song
+import com.abra.musica.data.model.mockSong
 import com.abra.musica.player.PlayerController
 import com.abra.musica.player.QueueManager
 import com.abra.musica.player.RepeatMode
@@ -124,4 +125,12 @@ data class PlayerUiState(
     val duration: Long = 0L,
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val shuffleEnabled: Boolean = false
+)
+val mockUiState = PlayerUiState(
+    currentSong = mockSong,
+    isPlaying = true,
+    currentPosition = 10000L,
+    duration = 20000L,
+    repeatMode = RepeatMode.ALL,
+    shuffleEnabled = true
 )

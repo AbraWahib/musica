@@ -1,8 +1,16 @@
 package com.abra.musica.ui.components
 
-import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -17,16 +25,17 @@ fun BottomNavBar(
 
     NavigationBar {
         val items = listOf(
-            Triple(Screen.Songs.route, R.string.songs, R.drawable.ic_music_note),
-            Triple(Screen.Albums.route, R.string.albums, R.drawable.ic_album),
-            Triple(Screen.Artists.route, R.string.artists, R.drawable.ic_person),
-            Triple(Screen.Folders.route, R.string.folders, R.drawable.ic_folder),
-            Triple(Screen.Playlists.route, R.string.playlists, R.drawable.ic_playlist)
+            Triple(Screen.Songs.route, R.string.songs, Icons.Default.MusicNote),
+            Triple(Screen.Albums.route, R.string.albums, Icons.Default.Album),
+            Triple(Screen.Artists.route, R.string.artists, Icons.Default.Person),
+            Triple(Screen.Folders.route, R.string.folders, Icons.Default.Folder),
+            Triple(Screen.Playlists.route, R.string.playlists, Icons.AutoMirrored.Filled.PlaylistPlay
+            )
         )
 
-        items.forEach { (route, labelRes, iconRes) ->
+        items.forEach { (route, labelRes, icon) ->
             NavigationBarItem(
-                icon = { Icon(painterResource(iconRes), contentDescription = null) },
+                icon = { Icon(imageVector = icon, contentDescription = null) },
                 label = { Text(stringResource(labelRes)) },
                 selected = currentRoute == route,
                 onClick = {
