@@ -61,11 +61,6 @@ fun AppNavHost(
                 // TODO: PlaylistDetailScreen(playlistId)
             }
         }
-        composable(Screen.NowPlaying.route) {
-            NowPlayingScreen(
-                onBackClick = { navController.popBackStack() }
-            )
-        }
         composable(Screen.Search.route) {
             // TODO: SearchScreen()
         }

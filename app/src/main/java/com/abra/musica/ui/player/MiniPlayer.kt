@@ -1,5 +1,6 @@
-package com.abra.musica.ui.components
+package com.abra.musica.ui.player
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -32,7 +33,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -43,48 +43,21 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.abra.musica.R
-import com.abra.musica.data.model.Song
 import com.abra.musica.data.model.albumArtUri
-import com.abra.musica.data.model.mockSong
-import com.abra.musica.ui.navigation.Screen
-import com.abra.musica.ui.player.NowPlayingViewModel
-import com.abra.musica.ui.theme.MusicaTheme
-
+import com.abra.musica.ui.components.PlayerUiState
+private const val TAG = "NowPlayingContainer"
 @Composable
 fun MiniPlayer(
-    navController: NavController,
-    viewModel: NowPlayingViewModel = hiltViewModel(),
+    uiState: PlayerUiState,
+    onMiniPlayerClick: () -> Unit = {},
+    onPlayPauseClick: () -> Unit = {},
 ) {
-    val currentSong by viewModel.currentSong.collectAsStateWithLifecycle()
-    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-    var isFavorite by rememberSaveable(currentSong?.id) { mutableStateOf(false) }
-
-    MiniPlayerContent(
-        currentSong = currentSong,
-        isPlaying = isPlaying,
-        isFavorite = isFavorite,
-        onPlayPauseClick = { viewModel.togglePlayPause() },
-        onMiniPlayerClick = { navController.navigate(Screen.NowPlaying.route) },
-        onFavoriteClick = { isFavorite = !isFavorite }
-    )
-}
-
-@Composable
-fun MiniPlayerContent(
-    currentSong: Song?,
-    isPlaying: Boolean,
-    isFavorite: Boolean,
-    onPlayPauseClick: () -> Unit,
-    onMiniPlayerClick: () -> Unit,
-    onFavoriteClick: () -> Unit,
-) {
+    val currentSong = uiState.currentSong
+    val isPlaying = uiState.isPlaying
+    val isFavorite by rememberSaveable(currentSong?.id) { mutableStateOf(false) }
     val pillShape = RoundedCornerShape(28.dp)
     val overlayBrush = Brush.horizontalGradient(
         colors = listOf(
@@ -93,8 +66,12 @@ fun MiniPlayerContent(
         )
     )
 
+    Log.d(
+        TAG,
+        "MiniPlayer: currentSong: ${currentSong?.title}, isPlaying: $isPlaying, isFavorite: $isFavorite"
+    )
     AnimatedVisibility(
-        visible = currentSong != null,
+        visible = currentSong != null && !uiState.isExpanded,
         enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
         exit = fadeOut() + slideOutVertically(targetOffsetY = { it / 2 }),
     ) {
@@ -184,7 +161,7 @@ fun MiniPlayerContent(
                             )
                         }
 
-                        IconButton(onClick = onFavoriteClick) {
+                        IconButton(onClick = { /* todo: toggle favorite*/ }) {
                             Icon(
                                 imageVector = if (isFavorite) {
                                     Icons.Filled.Favorite
@@ -210,19 +187,4 @@ fun MiniPlayerContent(
     }
 }
 
-@Preview
-@Composable
-private fun MiniPlayerContentPreview() {
-    MusicaTheme {
-        Surface {
-            MiniPlayerContent(
-                currentSong = mockSong,
-                isPlaying = true,
-                isFavorite = true,
-                onPlayPauseClick = {},
-                onMiniPlayerClick = {},
-                onFavoriteClick = {}
-            )
-        }
-    }
-}
+

@@ -7,9 +7,12 @@ import com.abra.musica.data.model.mockSong
 import com.abra.musica.player.PlayerController
 import com.abra.musica.player.QueueManager
 import com.abra.musica.player.RepeatMode
+import com.abra.musica.ui.components.PlayerUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -31,15 +34,19 @@ class NowPlayingViewModel @Inject constructor(
     val currentQueue: StateFlow<List<Song>> = queueManager.currentQueue
     val currentIndex: StateFlow<Int> = queueManager.currentIndex
 
+    private val _isExpanded = MutableStateFlow(false)
+    val isExpanded: StateFlow<Boolean> = _isExpanded.asStateFlow()
+
     // Combined state for UI
-    
+
     val playerState: StateFlow<PlayerUiState> = combine(
         currentSong,
         isPlaying,
         currentPosition,
         duration,
         repeatMode,
-        shuffleEnabled
+        shuffleEnabled,
+        isExpanded
     ) { array ->
         PlayerUiState(
             currentSong = array[0] as Song?,
@@ -47,9 +54,14 @@ class NowPlayingViewModel @Inject constructor(
             currentPosition = array[2] as Long,
             duration = array[3] as Long,
             repeatMode = array[4] as RepeatMode,
-            shuffleEnabled = array[5] as Boolean
+            shuffleEnabled = array[5] as Boolean,
+            isExpanded = array[6] as Boolean
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PlayerUiState())
+
+    fun expand() { _isExpanded.value = true }
+
+    fun collapse() { _isExpanded.value = false }
 
     fun playSong(song: Song, queue: List<Song> = listOf(song)) {
         viewModelScope.launch {
@@ -118,19 +130,5 @@ class NowPlayingViewModel @Inject constructor(
     }
 }
 
-data class PlayerUiState(
-    val currentSong: Song? = null,
-    val isPlaying: Boolean = false,
-    val currentPosition: Long = 0L,
-    val duration: Long = 0L,
-    val repeatMode: RepeatMode = RepeatMode.OFF,
-    val shuffleEnabled: Boolean = false
-)
-val mockUiState = PlayerUiState(
-    currentSong = mockSong,
-    isPlaying = true,
-    currentPosition = 10000L,
-    duration = 20000L,
-    repeatMode = RepeatMode.ALL,
-    shuffleEnabled = true
-)
+
+

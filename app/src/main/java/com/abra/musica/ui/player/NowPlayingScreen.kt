@@ -1,5 +1,6 @@
 package com.abra.musica.ui.player
 
+import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Repeat
@@ -39,8 +41,8 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -54,6 +56,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -65,70 +68,22 @@ import coil.compose.AsyncImage
 import com.abra.musica.R
 import com.abra.musica.data.model.albumArtUri
 import com.abra.musica.player.RepeatMode
+import com.abra.musica.ui.components.PlayerUiState
 import kotlinx.coroutines.launch
 import kotlin.math.max
 
 
 @Composable
 fun NowPlayingScreen(
-    viewModel: NowPlayingViewModel = hiltViewModel(),
-    onBackClick: () -> Unit = {}
+    playerState: PlayerUiState,
+    onCollapse:() -> Unit
 ) {
-    val playerState by viewModel.playerState.collectAsStateWithLifecycle()
-    val scope = rememberCoroutineScope()
-    val dragOffset = remember { mutableFloatStateOf(0f) }
-    val animatable = remember { Animatable(0f) }
-    val dismissThreshold = 180f
-    val dragAlpha = (1f - (dragOffset.floatValue / 420f)).coerceIn(0.72f, 1f)
-    val displayOffset = if (animatable.isRunning) animatable.value else dragOffset.floatValue
+    val context = LocalContext.current
     val accent = MaterialTheme.colorScheme.primary
-
 
     Scaffold(
         modifier = Modifier
-            .fillMaxSize()
-            .graphicsLayer { translationY = displayOffset }
-            .alpha(dragAlpha)
-            .pointerInput(Unit) {
-                detectVerticalDragGestures(
-                    onVerticalDrag = { change, dragAmount ->
-                        change.consume()
-                        // ✅ No coroutine — direct state update, zero lag
-                        dragOffset.floatValue = max(0f, dragOffset.floatValue + dragAmount)
-                    },
-                    onDragEnd = {
-                        scope.launch {
-                            if (dragOffset.floatValue > dismissThreshold) {
-                                onBackClick()
-                            } else {
-                                // Sync animatable to current drag position first
-                                animatable.snapTo(dragOffset.floatValue)
-                                animatable.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                        stiffness = Spring.StiffnessMediumLow
-                                    )
-                                )
-                                dragOffset.floatValue = 0f
-                            }
-                        }
-                    },
-                    onDragCancel = {
-                        scope.launch {
-                            animatable.snapTo(dragOffset.floatValue)
-                            animatable.animateTo(
-                                targetValue = 0f,
-                                animationSpec = spring(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessMediumLow
-                                )
-                            )
-                            dragOffset.floatValue = 0f
-                        }
-                    }
-                )
-            },
+            .fillMaxSize(),
         containerColor = Color.Transparent
     ) { innerPadding ->
         Box(
@@ -143,9 +98,13 @@ fun NowPlayingScreen(
                         )
                     )
                 )
-
-
         ) {
+            IconButton(
+                onClick = onCollapse,
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
+            ) {
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = null)
+            }
             playerState.currentSong?.let { song ->
                 AsyncImage(
                     model = song.albumArtUri(),
@@ -239,7 +198,7 @@ fun NowPlayingScreen(
 
                     Slider(
                         value = playerState.currentPosition.toFloat(),
-                        onValueChange = { viewModel.seekTo(it.toLong()) },
+                        onValueChange = { Toast.makeText(context, "Seek to", Toast.LENGTH_LONG).show()}, // todo: implement seekTo
                         valueRange = 0f..playerState.duration.toFloat().coerceAtLeast(1f),
                         modifier = Modifier.fillMaxWidth(),
                         colors = SliderDefaults.colors(
@@ -278,11 +237,11 @@ fun NowPlayingScreen(
                             icon = Icons.Default.Shuffle,
                             contentDescription = stringResource(R.string.shuffle),
                             selected = playerState.shuffleEnabled,
-                            onClick = { viewModel.toggleShuffle() }
+                            onClick = { Toast.makeText(context, "Toggle Shuffle", Toast.LENGTH_LONG).show() } //todo: implement toggle shuffle
                         )
 
                         IconButton(
-                            onClick = { viewModel.skipToPrevious() },
+                            onClick = { Toast.makeText(context, "Seek to Previous", Toast.LENGTH_LONG).show() }, // todo: implement seekToPrevious
                             modifier = Modifier.size(64.dp)
                         ) {
                             Icon(
@@ -298,7 +257,7 @@ fun NowPlayingScreen(
                             modifier = Modifier.size(78.dp)
                         ) {
                             IconButton(
-                                onClick = { viewModel.togglePlayPause() },
+                                onClick = { Toast.makeText(context, "Toggle Pause Play", Toast.LENGTH_LONG).show() }, // todo: implement togglePausePlay
                                 modifier = Modifier.fillMaxSize()
                             ) {
                                 Icon(
@@ -319,7 +278,7 @@ fun NowPlayingScreen(
                         }
 
                         IconButton(
-                            onClick = { viewModel.skipToNext() },
+                            onClick = { Toast.makeText(context, "Seek to Next", Toast.LENGTH_LONG).show() }, // implement seekToNext
                             modifier = Modifier.size(64.dp)
                         ) {
                             Icon(
@@ -343,7 +302,7 @@ fun NowPlayingScreen(
                                     RepeatMode.ALL -> RepeatMode.ONE
                                     RepeatMode.ONE -> RepeatMode.OFF
                                 }
-                                viewModel.setRepeatMode(nextMode)
+                                Toast.makeText(context, "Set Repeat Mode $nextMode", Toast.LENGTH_LONG).show() //todo: implement setMode
                             }
                         )
                     }
