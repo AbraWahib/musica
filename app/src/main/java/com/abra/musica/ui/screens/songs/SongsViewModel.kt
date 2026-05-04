@@ -1,5 +1,6 @@
 package com.abra.musica.ui.screens.songs
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abra.musica.data.model.Song
@@ -38,18 +39,11 @@ class SongsViewModel @Inject constructor(
 
     val currentSong: StateFlow<Song?> = playerController.currentSong
     val isPlaying: StateFlow<Boolean> = playerController.isPlaying
-    
-    fun onEvent(event: Events) {
-        when (event) {
-            is Events.OnSongClick -> {
-                playSong(event.song)
-            }
-        }
-    }
 
-    private fun playSong(song: Song) {
+    fun playSong(song: Song) {
         viewModelScope.launch {
             playerController.play(song, songs.value)
+            Log.d("Play Song", "playSong in viewModel: ${song.title}")
         }
     }
 

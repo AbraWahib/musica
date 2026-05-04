@@ -1,17 +1,27 @@
 package com.abra.musica.player
 
 import androidx.media3.common.Player
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 import com.abra.musica.data.model.Song
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class PlayerControllerImpl @Inject constructor(
+    private val player: ExoPlayer,
     private val queueManager: QueueManager
 ) : PlayerController {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     private val _currentSong = MutableStateFlow<Song?>(null)
     override val currentSong: StateFlow<Song?> = _currentSong.asStateFlow()
@@ -34,57 +44,124 @@ class PlayerControllerImpl @Inject constructor(
     private val _shuffleEnabled = MutableStateFlow(false)
     override val shuffleEnabled: StateFlow<Boolean> = _shuffleEnabled.asStateFlow()
 
+    init {
+        player.addListener(
+            object : Player.Listener {
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    _playbackState.value = playbackState
+                    _duration.value = player.duration.takeIf { it > 0 } ?: 0L
+                }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    _isPlaying.value = isPlaying
+                }
+
+                override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                    val songId = mediaItem?.mediaId?.toLongOrNull()
+                    _currentSong.value = queueManager.currentQueue.value.firstOrNull { it.id == songId }
+                    _duration.value = player.duration.takeIf { it > 0 } ?: _currentSong.value?.duration ?: 0L
+                }
+            }
+        )
+
+        scope.launch {
+            while (isActive) {
+                _currentPosition.value = player.currentPosition.coerceAtLeast(0L)
+                _duration.value = player.duration.takeIf { it > 0 } ?: _duration.value
+                delay(500)
+            }
+        }
+    }
+
     override fun play(song: Song, queue: List<Song>) {
-        queueManager.setQueue(queue, queue.indexOf(song))
+        val playbackQueue = queue.ifEmpty { listOf(song) }
+        val startIndex = playbackQueue.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
+        queueManager.setQueue(playbackQueue, startIndex)
+
+        player.setMediaItems(playbackQueue.map { it.toMediaItem() }, startIndex, 0L)
+        player.prepare()
+        player.play()
+
         _currentSong.value = song
-        _isPlaying.value = true
-        _playbackState.value = Player.STATE_READY
         _duration.value = song.duration
     }
 
     override fun playPause() {
-        _isPlaying.value = !_isPlaying.value
+        if (player.isPlaying) {
+            player.pause()
+        } else {
+            player.play()
+        }
     }
 
     override fun seekTo(position: Long) {
-        _currentPosition.value = position
+        player.seekTo(position)
     }
 
     override fun skipNext() {
-        if (queueManager.skipToNext()) {
-            _currentSong.value = queueManager.currentSong.value
+        if (player.hasNextMediaItem()) {
+            player.seekToNextMediaItem()
+        } else if (queueManager.skipToNext()) {
+            val index = queueManager.currentIndex.value
+            player.seekTo(index, 0L)
         }
     }
 
     override fun skipPrevious() {
-        if (queueManager.skipToPrevious()) {
-            _currentSong.value = queueManager.currentSong.value
+        if (player.currentPosition > 3000L) {
+            player.seekTo(0L)
+        } else if (player.hasPreviousMediaItem()) {
+            player.seekToPreviousMediaItem()
+        } else if (queueManager.skipToPrevious()) {
+            val index = queueManager.currentIndex.value
+            player.seekTo(index, 0L)
         }
     }
 
     override fun setRepeatMode(mode: RepeatMode) {
         _repeatMode.value = mode
         queueManager.setRepeatMode(mode)
+        player.repeatMode = when (mode) {
+            RepeatMode.OFF -> Player.REPEAT_MODE_OFF
+            RepeatMode.ONE -> Player.REPEAT_MODE_ONE
+            RepeatMode.ALL -> Player.REPEAT_MODE_ALL
+        }
     }
 
     override fun toggleShuffle() {
         _shuffleEnabled.value = !_shuffleEnabled.value
         queueManager.toggleShuffle()
+        player.shuffleModeEnabled = _shuffleEnabled.value
     }
 
     override fun addToQueue(song: Song) {
         queueManager.addToQueue(song)
+        player.addMediaItem(song.toMediaItem())
     }
 
     override fun addToQueueNext(song: Song) {
         queueManager.addToQueueNext(song)
+        player.addMediaItem(player.currentMediaItemIndex + 1, song.toMediaItem())
     }
 
     override fun removeFromQueue(index: Int) {
         queueManager.removeFromQueue(index)
+        if (index in 0 until player.mediaItemCount) {
+            player.removeMediaItem(index)
+        }
     }
 
     override fun reorderQueue(from: Int, to: Int) {
         queueManager.reorderQueue(from, to)
+        if (from in 0 until player.mediaItemCount && to in 0 until player.mediaItemCount) {
+            player.moveMediaItem(from, to)
+        }
+    }
+
+    private fun Song.toMediaItem(): MediaItem {
+        return MediaItem.Builder()
+            .setUri(uri)
+            .setMediaId(id.toString())
+            .build()
     }
 }

@@ -45,15 +45,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import com.abra.musica.R
 import com.abra.musica.data.model.albumArtUri
 import com.abra.musica.ui.components.PlayerUiState
+import com.abra.musica.ui.player.components.NowPlayingEvents
+
 private const val TAG = "NowPlayingContainer"
+
 @Composable
 fun MiniPlayer(
     uiState: PlayerUiState,
     onMiniPlayerClick: () -> Unit = {},
-    onPlayPauseClick: () -> Unit = {},
+    onPlayPauseClick: (NowPlayingEvents) -> Unit = {},
 ) {
     val currentSong = uiState.currentSong
     val isPlaying = uiState.isPlaying
@@ -64,11 +68,6 @@ fun MiniPlayer(
             MaterialTheme.colorScheme.surface.copy(alpha = 0.86f),
             MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)
         )
-    )
-
-    Log.d(
-        TAG,
-        "MiniPlayer: currentSong: ${currentSong?.title}, isPlaying: $isPlaying, isFavorite: $isFavorite"
     )
     AnimatedVisibility(
         visible = currentSong != null && !uiState.isExpanded,
@@ -98,8 +97,8 @@ fun MiniPlayer(
                         modifier = Modifier
                             .matchParentSize()
                             .blur(100.dp),
-                        placeholder = rememberVectorPainter(Icons.Default.Album),
-                        error = rememberVectorPainter(Icons.Default.Album),
+                        placeholder = rememberAsyncImagePainter(R.drawable.music_placeholder),
+                        error = rememberAsyncImagePainter(R.drawable.music_placeholder),
                         contentScale = ContentScale.Crop,
                         alpha = 0.8f
                     )
@@ -123,7 +122,11 @@ fun MiniPlayer(
                                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
                             )
                         ) {
-                            IconButton(onClick = onPlayPauseClick) {
+                            IconButton(onClick = {
+                                onPlayPauseClick(
+                                    NowPlayingEvents.TogglePlayPause()
+                                )
+                            }) {
                                 Icon(
                                     imageVector = if (isPlaying) {
                                         Icons.Default.Pause

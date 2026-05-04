@@ -8,6 +8,7 @@ import com.abra.musica.player.PlayerController
 import com.abra.musica.player.QueueManager
 import com.abra.musica.player.RepeatMode
 import com.abra.musica.ui.components.PlayerUiState
+import com.abra.musica.ui.player.components.NowPlayingEvents
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -59,6 +60,16 @@ class NowPlayingViewModel @Inject constructor(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PlayerUiState())
 
+    fun onEvent(event: NowPlayingEvents){
+        when(event){
+            is NowPlayingEvents.SeekTo -> seekTo(event.position)
+            is NowPlayingEvents.SetRepeatMode -> setRepeatMode(event.repeatMode)
+            is NowPlayingEvents.SkipToNext -> skipToNext()
+            is NowPlayingEvents.SkipToPrevious -> skipToPrevious()
+            is NowPlayingEvents.TogglePlayPause -> togglePlayPause()
+            is NowPlayingEvents.ToggleShuffle -> toggleShuffle()
+        }
+    }
     fun expand() { _isExpanded.value = true }
 
     fun collapse() { _isExpanded.value = false }
@@ -69,37 +80,37 @@ class NowPlayingViewModel @Inject constructor(
         }
     }
 
-    fun togglePlayPause() {
+    private fun togglePlayPause() {
         viewModelScope.launch {
             playerController.playPause()
         }
     }
 
-    fun skipToNext() {
+    private fun skipToNext() {
         viewModelScope.launch {
             playerController.skipNext()
         }
     }
 
-    fun skipToPrevious() {
+    private fun skipToPrevious() {
         viewModelScope.launch {
             playerController.skipPrevious()
         }
     }
 
-    fun seekTo(position: Long) {
+    private fun seekTo(position: Long) {
         viewModelScope.launch {
             playerController.seekTo(position)
         }
     }
 
-    fun toggleShuffle() {
+    private fun toggleShuffle() {
         viewModelScope.launch {
             playerController.toggleShuffle()
         }
     }
 
-    fun setRepeatMode(mode: RepeatMode) {
+    private fun setRepeatMode(mode: RepeatMode) {
         viewModelScope.launch {
             playerController.setRepeatMode(mode)
         }

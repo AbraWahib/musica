@@ -5,8 +5,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.abra.musica.ui.player.NowPlayingScreen
+import com.abra.musica.ui.screens.albums.AlbumDetailScreen
 import com.abra.musica.ui.screens.albums.AlbumsScreen
+import com.abra.musica.ui.screens.artists.ArtistDetailScreen
 import com.abra.musica.ui.screens.artists.ArtistsScreen
 import com.abra.musica.ui.screens.folders.FoldersScreen
 import com.abra.musica.ui.screens.playlists.PlaylistsScreen
@@ -26,21 +27,39 @@ fun AppNavHost(
             SongsScreen()
         }
         composable(Screen.Albums.route) {
-            AlbumsScreen()
+            AlbumsScreen(
+                onAlbumClick = { albumId ->
+                    navController.navigate(Screen.AlbumDetail.createRoute(albumId))
+                }
+            )
         }
         composable(Screen.AlbumDetail.route) { backStackEntry ->
             val albumId = backStackEntry.arguments?.getString("albumId")?.toLongOrNull()
             if (albumId != null) {
-                // TODO: AlbumDetailScreen(albumId)
+                AlbumDetailScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onGoToArtist = { artistId ->
+                        navController.navigate(Screen.ArtistDetail.createRoute(artistId))
+                    }
+                )
             }
         }
         composable(Screen.Artists.route) {
-            ArtistsScreen()
+            ArtistsScreen(
+                onArtistClick = { artistId ->
+                    navController.navigate(Screen.ArtistDetail.createRoute(artistId))
+                }
+            )
         }
         composable(Screen.ArtistDetail.route) { backStackEntry ->
             val artistId = backStackEntry.arguments?.getString("artistId")?.toLongOrNull()
             if (artistId != null) {
-                // TODO: ArtistDetailScreen(artistId)
+                ArtistDetailScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onGoToAlbum = { albumId ->
+                        navController.navigate(Screen.AlbumDetail.createRoute(albumId))
+                    }
+                )
             }
         }
         composable(Screen.Folders.route) {

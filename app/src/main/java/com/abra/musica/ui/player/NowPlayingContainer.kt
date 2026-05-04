@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.abra.musica.ui.player.components.NowPlayingEvents
 import kotlinx.coroutines.launch
 
 private const val TAG = "Mini Player Test"
@@ -73,7 +74,7 @@ fun NowPlayingContainer(
                         }
                     },
                     onDragStopped = {
-                        val shouldExpand = offsetY.value < screenHeightPx / 2
+                        val shouldExpand = offsetY.value < screenHeightPx / 10
                         scope.launch {
                             if (shouldExpand) {
                                 expandPlayer()
@@ -86,14 +87,12 @@ fun NowPlayingContainer(
         ) {
             NowPlayingScreen(
                 playerState = uiState,
+                onEvent = viewModel::onEvent,
                 onCollapse = {
                     scope.launch { collapsePlayer() }
                 }
             )
         }
-
-        Log.d(TAG, "NowPlayingContainer: Now Playing Screen Is Called")
-
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -107,7 +106,7 @@ fun NowPlayingContainer(
                         expandPlayer()
                     }
                 },
-                onPlayPauseClick = viewModel::togglePlayPause
+                onPlayPauseClick = viewModel::onEvent
             )
             Log.d(TAG, "NowPlayingContainer: Mini PlayingScreen Is Called")
         }

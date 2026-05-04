@@ -1,5 +1,6 @@
 package com.abra.musica.ui.components
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
@@ -35,11 +36,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
 import com.abra.musica.R
 import com.abra.musica.data.model.Song
 import com.abra.musica.data.model.albumArtUri
@@ -47,9 +52,7 @@ import com.abra.musica.data.model.albumArtUri
 @Composable
 fun SongListItem(
     song: Song,
-    isPlaying: Boolean = false,
     onClick: () -> Unit = {},
-    onLongClick: () -> Unit = {},
     showOverflowMenu: Boolean = true,
     onAddToQueue: () -> Unit = {},
     onAddToPlaylist: () -> Unit = {},
@@ -61,7 +64,10 @@ fun SongListItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .clickable {
+                onClick()
+                Log.d("Play Song", "SongListItem: ${song.title}")
+            }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -70,33 +76,31 @@ fun SongListItem(
             model = song.albumArtUri(),
             contentDescription = stringResource(R.string.album_art_desc, song.album),
             modifier = Modifier
-                .size(48.dp)
-                .padding(end = 16.dp),
-            placeholder = rememberVectorPainter(Icons.Default.Album),
-            error = rememberVectorPainter(Icons.Default.Album)
+                .size(40.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop,
+            placeholder = rememberAsyncImagePainter(R.drawable.music_placeholder),
+            error = rememberAsyncImagePainter(R.drawable.music_placeholder)
         )
 
         // Song info
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = song.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1
-                )
-                if (isPlaying) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    PlayingIndicator()
-                }
-            }
+        Column(modifier = Modifier
+            .weight(1f)
+            .padding(horizontal = 16.dp)) {
             Text(
-                text = "${song.artist} • ${song.album}",
+                text = song.title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = song.artist,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
-
         // Duration
         Text(
             text = song.duration.formatDuration(),
@@ -169,17 +173,17 @@ fun SongListItem(
 @Composable
 fun PlayingIndicator(modifier: Modifier = Modifier) {
     // Simple animated playing indicator - 3 bars
-    Column (
+    Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
         repeat(3) { index ->
-            AnimatedVisibility (
+            AnimatedVisibility(
                 visible = true,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
-                val width = (8 + (3-index) * 4).dp
+                val width = (8 + (3 - index) * 4).dp
                 Box(
                     modifier = Modifier
                         .width(width)

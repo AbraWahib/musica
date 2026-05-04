@@ -1,5 +1,6 @@
 package com.abra.musica.ui.screens.songs
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,16 +27,12 @@ fun SongsScreen(
    viewModel: SongsViewModel = hiltViewModel()
 ) {
     val songs by viewModel.songs.collectAsStateWithLifecycle()
-    val sortOrder by viewModel.sortOrder.collectAsStateWithLifecycle()
-    val currentSong by viewModel.currentSong.collectAsStateWithLifecycle()
-    val isPlaying by viewModel.isPlaying.collectAsStateWithLifecycle()
-
     SongScreenContent(
         songs = songs,
-        sortOrder = sortOrder,
-        currentSong = currentSong,
-        isPlaying = isPlaying,
-        onEvent = viewModel::onEvent,
+        onSongClick = {
+            viewModel.playSong(it)
+            Log.d("Play Song", "SongsScreen: ${it.title}")
+        },
         onSortOrderChange = viewModel::setSortOrder
     )
 }
@@ -43,10 +40,7 @@ fun SongsScreen(
 @Composable
 fun SongScreenContent(
     songs: List<Song>,
-    sortOrder: SortOrder,
-    currentSong: Song?,
-    isPlaying: Boolean,
-    onEvent: (Events) -> Unit,
+    onSongClick: (Song) -> Unit,
     onSortOrderChange: (SortOrder) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -118,8 +112,8 @@ fun SongScreenContent(
                 items(songs, key = { it.id }) { song ->
                     SongListItem(
                         song = song,
-                        isPlaying = isPlaying && song.id == currentSong?.id,
-                        onClick = { onEvent(Events.OnSongClick(song)) }
+                        onClick = { onSongClick(song)
+                            }
                     )
                 }
             }
