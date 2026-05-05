@@ -1,9 +1,17 @@
 package com.abra.musica.player
 
+import android.content.Context
+import android.content.Intent
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.media3.common.Player
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.exoplayer.ExoPlayer
 import com.abra.musica.data.model.Song
+import com.abra.musica.data.model.albumArtUri
+import com.abra.musica.service.MusicService
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,6 +26,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PlayerControllerImpl @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val player: ExoPlayer,
     private val queueManager: QueueManager
 ) : PlayerController {
@@ -74,6 +83,7 @@ class PlayerControllerImpl @Inject constructor(
     }
 
     override fun play(song: Song, queue: List<Song>) {
+        startPlaybackService()
         val playbackQueue = queue.ifEmpty { listOf(song) }
         val startIndex = playbackQueue.indexOfFirst { it.id == song.id }.coerceAtLeast(0)
         queueManager.setQueue(playbackQueue, startIndex)
@@ -162,6 +172,23 @@ class PlayerControllerImpl @Inject constructor(
         return MediaItem.Builder()
             .setUri(uri)
             .setMediaId(id.toString())
+            .setMediaMetadata(
+                MediaMetadata.Builder()
+                    .setTitle(title)
+                    .setArtist(artist)
+                    .setAlbumTitle(album)
+                    .setArtworkUri(albumArtUri())
+                    .build()
+            )
             .build()
+    }
+
+    private fun startPlaybackService() {
+        val intent = Intent(context, MusicService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            ContextCompat.startForegroundService(context, intent)
+        } else {
+            context.startService(intent)
+        }
     }
 }

@@ -62,4 +62,6 @@
     <string name="no_playlists">No playlists yet</string>
     <string name="create_first_playlist">Create your first playlist to get started</string>
     <string name="no_song_playing">No song playing</string>
+    <string name="playback_notification_channel">Playback</string>
+    <string name="notification_artist_album">%1$s • %2$s</string>
 </resources>

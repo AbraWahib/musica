@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -50,13 +51,13 @@ private fun AlbumDetailContent(
     onSongClick: (Song) -> Unit,
     onGoToArtist: (Long) -> Unit
 ) {
-    val fallbackTitle = stringResource(R.string.albums)
-    val title = uiState.title.ifBlank { fallbackTitle }
-
     val listState = rememberLazyListState()
     val expandedHeight = 280.dp
     val collapsedHeight = 64.dp
-    val collapseRangePx = with(LocalDensity.current) { (expandedHeight - collapsedHeight).toPx() }
+    val density = LocalDensity.current
+    
+    val collapseRangePx = with(density) { (expandedHeight - collapsedHeight).toPx() }
+    
     val collapsedFraction by remember {
         derivedStateOf {
             val scrollPx = if (listState.firstVisibleItemIndex == 0) {
@@ -68,44 +69,50 @@ private fun AlbumDetailContent(
         }
     }
 
-    Box(Modifier.fillMaxSize()) {
-        if (uiState.songs.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = expandedHeight),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Album,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = expandedHeight, bottom = 16.dp)
-            ) {
-                items(uiState.songs, key = { it.id }) { song ->
-                    SongListItem(
-                        song = song,
-                        onClick = { onSongClick(song) },
-                        onGoToArtist = { onGoToArtist(song.artistId) }
+    Scaffold(
+        modifier = Modifier.fillMaxSize()
+    ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (uiState.songs.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Album,
+                        contentDescription = null,
+                        modifier = Modifier.padding(bottom = 100.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                     )
                 }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = expandedHeight,
+                        bottom = innerPadding.calculateBottomPadding() + 16.dp
+                    )
+                ) {
+                    items(uiState.songs, key = { it.id }) { song ->
+                        SongListItem(
+                            song = song,
+                            onClick = { onSongClick(song) },
+                            onGoToArtist = { onGoToArtist(song.artistId) }
+                        )
+                    }
+                }
             }
-        }
 
-        CollapsingCoverTopBar(
-            title = title,
-            subtitle = stringResource(R.string.song_count, uiState.songCount),
-            coverArtUri = uiState.coverArtUri,
-            collapsedFraction = collapsedFraction,
-            onBackClick = onBackClick,
-            expandedHeight = expandedHeight,
-            collapsedHeight = collapsedHeight
-        )
+            CollapsingCoverTopBar(
+                title = uiState.title.ifBlank { stringResource(R.string.albums) },
+                subtitle = stringResource(R.string.song_count, uiState.songCount),
+                coverArtUri = uiState.coverArtUri,
+                collapsedFraction = collapsedFraction,
+                onBackClick = onBackClick,
+                expandedHeight = expandedHeight,
+                collapsedHeight = collapsedHeight
+            )
+        }
     }
 }

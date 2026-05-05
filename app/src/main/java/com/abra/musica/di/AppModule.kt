@@ -1,6 +1,8 @@
 package com.abra.musica.di
 
 import android.content.Context
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.room.Room
 import com.abra.musica.data.db.MusicDatabase
@@ -48,7 +50,16 @@ object AppModule {
     fun provideExoPlayer(
         @ApplicationContext context: Context
     ): ExoPlayer {
-        return ExoPlayer.Builder(context).build()
+        return ExoPlayer.Builder(context).build().apply {
+            setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(C.USAGE_MEDIA)
+                    .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                    .build(),
+                true
+            )
+            setHandleAudioBecomingNoisy(true)
+        }
     }
 
     @Provides

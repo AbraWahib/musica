@@ -324,6 +324,12 @@ class MusicService : MediaSessionService() {
 
 A Hilt-injected singleton that connects to `MusicService` via `MediaController`. UI ViewModels interact only with `PlayerController`, never with `ExoPlayer` directly.
 
+Current implementation note: the app uses one Hilt-provided `ExoPlayer` shared by the service and
+controller. `PlayerController.play(...)` must start `MusicService` before playback so the
+`MediaSession` is active for notification actions and external media controls. `MusicService` owns
+the `MediaSession` lifecycle, but it must not release the singleton `ExoPlayer`; the player is
+configured in DI for media audio focus and noisy-route pause handling.
+
 ```kotlin
 // Exposed interface (implement fully)
 interface PlayerController {

@@ -1,6 +1,7 @@
 package com.abra.musica.service
 
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
@@ -16,16 +17,18 @@ class MusicService : MediaSessionService() {
 
     private lateinit var mediaSession: MediaSession
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     override fun onCreate() {
         super.onCreate()
+        setMediaNotificationProvider(MusicaNotificationProvider(this))
         mediaSession = MediaSession.Builder(this, player).build()
+        addSession(mediaSession)
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo) = mediaSession
 
     override fun onDestroy() {
         mediaSession.release()
-        player.release()
         super.onDestroy()
     }
 
