@@ -1,11 +1,9 @@
 package com.abra.musica.ui.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
-import androidx.compose.material.icons.filled.Album
-import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -25,21 +23,18 @@ fun BottomNavBar(
 
     NavigationBar {
         val items = listOf(
-            Triple(Screen.Songs.route, R.string.songs, Icons.Default.MusicNote),
-            Triple(Screen.Albums.route, R.string.albums, Icons.Default.Album),
-            Triple(Screen.Artists.route, R.string.artists, Icons.Default.Person),
-            Triple(Screen.Folders.route, R.string.folders, Icons.Default.Folder),
-            Triple(Screen.Playlists.route, R.string.playlists, Icons.AutoMirrored.Filled.PlaylistPlay
-            )
+            BottomNavItem(Screen.Songs.route, R.string.songs, Icons.Default.MusicNote),
+            BottomNavItem(Screen.Search.route, R.string.search, Icons.Default.Search),
+            BottomNavItem(Screen.Library.route, R.string.library, Icons.Default.LibraryMusic)
         )
 
-        items.forEach { (route, labelRes, icon) ->
+        items.forEach { item ->
             NavigationBarItem(
-                icon = { Icon(imageVector = icon, contentDescription = null) },
-                label = { Text(stringResource(labelRes)) },
-                selected = currentRoute == route,
+                icon = { Icon(imageVector = item.icon, contentDescription = null) },
+                label = { Text(stringResource(item.labelRes)) },
+                selected = item.route == selectedTopLevelRoute(currentRoute),
                 onClick = {
-                    navController.navigate(route) {
+                    navController.navigate(item.route) {
                         launchSingleTop = true
                         restoreState = true
                         popUpTo(navController.graph.startDestinationId) {
@@ -51,3 +46,26 @@ fun BottomNavBar(
         }
     }
 }
+
+private fun selectedTopLevelRoute(currentRoute: String?): String? {
+    return when (currentRoute) {
+        Screen.Albums.route,
+        Screen.AlbumDetail.route,
+        Screen.Artists.route,
+        Screen.ArtistDetail.route,
+        Screen.Folders.route,
+        Screen.FolderDetail.route -> Screen.Songs.route
+        Screen.Playlists.route,
+        Screen.PlaylistDetail.route,
+        Screen.Favourites.route,
+        Screen.RecentlyPlayed.route,
+        Screen.Settings.route -> Screen.Library.route
+        else -> currentRoute
+    }
+}
+
+private data class BottomNavItem(
+    val route: String,
+    val labelRes: Int,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector
+)

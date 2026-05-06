@@ -19,6 +19,9 @@ sealed class Screen(val route: String) {
     object PlaylistDetail : Screen("playlists/{playlistId}") {
         fun createRoute(playlistId: Long) = "playlists/$playlistId"
     }
+    object Library   : Screen("library")
+    object Favourites : Screen("favourites")
+    object RecentlyPlayed : Screen("recently-played")
     object NowPlaying : Screen("now-playing")
     object Search    : Screen("search")
     object Settings  : Screen("settings")

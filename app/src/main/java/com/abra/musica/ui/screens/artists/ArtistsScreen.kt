@@ -21,23 +21,25 @@ import com.abra.musica.data.model.Artist
 @Composable
 fun ArtistsScreen(
     viewModel: ArtistsViewModel = hiltViewModel(),
-    onArtistClick: (Long) -> Unit = {}
+    onArtistClick: (Long) -> Unit = {},
+    showHeader: Boolean = true
 ) {
     val artists by viewModel.artists.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.artists),
-                style = MaterialTheme.typography.headlineSmall
-            )
+        if (showHeader) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.artists),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
         }
 
         if (artists.isEmpty()) {

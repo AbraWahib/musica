@@ -372,20 +372,24 @@ enum class RepeatMode { OFF, ONE, ALL }
 ```
 MainActivity
 └── AppNavHost
-    ├── BottomNavBar (persistent: Songs, Albums, Artists, Folders, Playlists)
+    ├── BottomNavBar (persistent: Songs, Search, Library)
     ├── MiniPlayer (persistent, above BottomNavBar, visible when song is loaded)
     │
-    ├── SongsScreen          /songs
-    ├── AlbumsScreen         /albums
+    ├── SongsScreen          /songs (tabs: All songs, Artists, Albums, Folders)
+    ├── SearchScreen         /search
+    ├── LibraryScreen        /library
+    ├── AlbumsScreen         /albums (secondary route, opened from Songs/Search)
     │   └── AlbumDetailScreen   /albums/{albumId}
-    ├── ArtistsScreen        /artists
+    ├── ArtistsScreen        /artists (secondary route, opened from Songs/Search)
     │   └── ArtistDetailScreen  /artists/{artistId}
-    ├── FoldersScreen        /folders
+    ├── FoldersScreen        /folders (secondary route, opened from Songs)
     │   └── FolderDetailScreen  /folders/{folderId}
-    ├── PlaylistsScreen      /playlists
+    ├── PlaylistsScreen      /playlists (secondary route, opened from Library/Search)
     │   └── PlaylistDetailScreen  /playlists/{playlistId}
-    ├── NowPlayingScreen     /now-playing  (full-screen modal)
-    └── SearchScreen         /search
+    ├── FavouriteSongsScreen /favourites
+    ├── RecentlyPlayedScreen /recently-played
+    ├── SettingsScreen       /settings
+    └── NowPlayingScreen     /now-playing  (full-screen modal)
 ```
 
 ### MiniPlayer Behavior
@@ -419,6 +423,7 @@ Use `ModalBottomSheet` (Material3). The queue is a `LazyColumn` with drag-to-reo
 - Filter: only show files where `IS_MUSIC = 1` and `DURATION >= 30000` (≥30 seconds).
 
 ### 7.2 Songs Screen
+- Top-level bottom-nav screen. Contains tabs for All songs, Artists, Albums, and Folders, reusing the existing section screens for those tabs.
 - Alphabetically sorted list (default). Support sort options: Title, Artist, Album, Duration, Date Added.
 - Each item: album art thumbnail (via Coil), title, artist, duration, overflow menu (→ play next, add to queue, add to playlist, go to album, go to artist, share, delete).
 - Long-press enters multi-select mode: select all, deselect all, add selected to playlist, delete selected.
@@ -444,10 +449,16 @@ Use `ModalBottomSheet` (Material3). The queue is a `LazyColumn` with drag-to-reo
 - **PlaylistDetailScreen**: reorderable song list (drag handle), "Play All", "Shuffle", add more songs button.
 
 ### 7.7 Search
+- Top-level bottom-nav screen.
 - Single search bar queries songs (title, artist, album), albums, artists, and playlists simultaneously.
 - Results grouped by category with a "Show all" link per category when results exceed 3.
 - Search is performed locally on the in-memory list (no DB query needed for songs/albums/artists).
 - Debounce input by 300ms before triggering search.
+
+### 7.7.1 Library
+- Top-level bottom-nav screen.
+- Shows navigation buttons for Favourite songs, Playlists, Recently played, and Settings.
+- Do not duplicate the playlist list on Library; navigate to `PlaylistsScreen` for playlist management.
 
 ### 7.8 Now Playing / Player Controls
 - Full details in [Section 6](#6-ui-architecture--screen-map).
@@ -488,6 +499,8 @@ Use **Navigation Compose** with a `NavHostController`.
 // Screen.kt
 sealed class Screen(val route: String) {
     object Songs     : Screen("songs")
+    object Search    : Screen("search")
+    object Library   : Screen("library")
     object Albums    : Screen("albums")
     object AlbumDetail : Screen("albums/{albumId}") {
         fun createRoute(albumId: Long) = "albums/$albumId"
@@ -504,14 +517,16 @@ sealed class Screen(val route: String) {
     object PlaylistDetail : Screen("playlists/{playlistId}") {
         fun createRoute(playlistId: Long) = "playlists/$playlistId"
     }
+    object Favourites : Screen("favourites")
+    object RecentlyPlayed : Screen("recently-played")
     object NowPlaying : Screen("now-playing")
-    object Search    : Screen("search")
     object Settings  : Screen("settings")
 }
 ```
 
 ### Navigation Rules
 - Bottom nav tabs use `launchSingleTop = true` and `restoreState = true`.
+- Bottom nav contains only `Songs`, `Search`, and `Library`.
 - `NowPlayingScreen` is NOT in the bottom nav; it is navigated to from `MiniPlayer` or play actions.
 - Back from `NowPlayingScreen` always returns to the previous back stack entry.
 - Deep links into `AlbumDetailScreen` from `SongsScreen` overflow menu: use `navController.navigate(Screen.AlbumDetail.createRoute(albumId))`.

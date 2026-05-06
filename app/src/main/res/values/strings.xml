@@ -1,11 +1,27 @@
 <resources>
     <string name="app_name">musica</string>
     <string name="songs">Songs</string>
+    <string name="all_songs">All songs</string>
     <string name="albums">Albums</string>
     <string name="artists">Artists</string>
     <string name="folders">Folders</string>
     <string name="playlists">Playlists</string>
     <string name="search">Search</string>
+    <string name="search_hint">Songs, artists, albums, playlists</string>
+    <string name="search_empty_title">Find your music</string>
+    <string name="search_empty_body">Search by song, artist, album, or playlist.</string>
+    <string name="search_no_results">No results found</string>
+    <string name="search_no_results_desc">Try a different search term.</string>
+    <string name="library">Library</string>
+    <string name="favourites">Favourite songs</string>
+    <string name="favourites_desc">Songs you marked as favourites</string>
+    <string name="playlists_desc">Your saved playlists</string>
+    <string name="recently_played">Recently played</string>
+    <string name="recently_played_desc">Music you listened to recently</string>
+    <string name="settings_desc">App preferences and playback options</string>
+    <string name="favourites_placeholder">Favourite songs will appear here.</string>
+    <string name="recently_played_placeholder">Recently played songs will appear here.</string>
+    <string name="settings_placeholder">Settings will be added here.</string>
     <string name="settings">Settings</string>
     <string name="now_playing">Now Playing</string>
     <string name="play">Play</string>

@@ -25,23 +25,25 @@ import com.abra.musica.ui.screens.albums.components.AlbumCard
 @Composable
 fun AlbumsScreen(
     viewModel: AlbumsViewModel = hiltViewModel(),
-    onAlbumClick: (Long) -> Unit = {}
+    onAlbumClick: (Long) -> Unit = {},
+    showHeader: Boolean = true
 ) {
     val albums by viewModel.albums.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.albums),
-                style = MaterialTheme.typography.headlineSmall
-            )
+        if (showHeader) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.albums),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
         }
 
         if (albums.isEmpty()) {
@@ -87,5 +89,4 @@ fun AlbumsScreen(
         }
     }
 }
-
 

@@ -1,16 +1,32 @@
 package com.abra.musica.ui.navigation
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.abra.musica.R
 import com.abra.musica.ui.screens.albums.AlbumDetailScreen
 import com.abra.musica.ui.screens.albums.AlbumsScreen
 import com.abra.musica.ui.screens.artists.ArtistDetailScreen
 import com.abra.musica.ui.screens.artists.ArtistsScreen
 import com.abra.musica.ui.screens.folders.FoldersScreen
+import com.abra.musica.ui.screens.library.LibraryScreen
 import com.abra.musica.ui.screens.playlists.PlaylistsScreen
+import com.abra.musica.ui.screens.search.SearchScreen
 import com.abra.musica.ui.screens.songs.SongsScreen
 
 @Composable
@@ -24,7 +40,17 @@ fun AppNavHost(
         modifier = modifier
     ) {
         composable(Screen.Songs.route) {
-            SongsScreen()
+            SongsScreen(
+                onAlbumClick = { albumId ->
+                    navController.navigate(Screen.AlbumDetail.createRoute(albumId))
+                },
+                onArtistClick = { artistId ->
+                    navController.navigate(Screen.ArtistDetail.createRoute(artistId))
+                },
+                onFolderClick = { folderId ->
+                    navController.navigate(Screen.FolderDetail.createRoute(folderId))
+                }
+            )
         }
         composable(Screen.Albums.route) {
             AlbumsScreen(
@@ -72,7 +98,11 @@ fun AppNavHost(
             }
         }
         composable(Screen.Playlists.route) {
-            PlaylistsScreen()
+            PlaylistsScreen(
+                onPlaylistClick = { playlistId ->
+                    navController.navigate(Screen.PlaylistDetail.createRoute(playlistId))
+                }
+            )
         }
         composable(Screen.PlaylistDetail.route) { backStackEntry ->
             val playlistId = backStackEntry.arguments?.getString("playlistId")?.toLongOrNull()
@@ -81,10 +111,86 @@ fun AppNavHost(
             }
         }
         composable(Screen.Search.route) {
-            // TODO: SearchScreen()
+            SearchScreen(
+                onArtistClick = { artistId ->
+                    navController.navigate(Screen.ArtistDetail.createRoute(artistId))
+                },
+                onAlbumClick = { albumId ->
+                    navController.navigate(Screen.AlbumDetail.createRoute(albumId))
+                },
+                onPlaylistClick = { playlistId ->
+                    navController.navigate(Screen.PlaylistDetail.createRoute(playlistId))
+                }
+            )
+        }
+        composable(Screen.Library.route) {
+            LibraryScreen(
+                onNavigateToFavourites = {
+                    navController.navigate(Screen.Favourites.route)
+                },
+                onNavigateToPlaylists = {
+                    navController.navigate(Screen.Playlists.route)
+                },
+                onNavigateToRecentlyPlayed = {
+                    navController.navigate(Screen.RecentlyPlayed.route)
+                },
+                onNavigateToSettings = {
+                    navController.navigate(Screen.Settings.route)
+                }
+            )
+        }
+        composable(Screen.Favourites.route) {
+            PlaceholderScreen(
+                title = stringResource(R.string.favourites),
+                message = stringResource(R.string.favourites_placeholder)
+            )
+        }
+        composable(Screen.RecentlyPlayed.route) {
+            PlaceholderScreen(
+                title = stringResource(R.string.recently_played),
+                message = stringResource(R.string.recently_played_placeholder)
+            )
         }
         composable(Screen.Settings.route) {
-            // TODO: SettingsScreen()
+            PlaceholderScreen(
+                title = stringResource(R.string.settings),
+                message = stringResource(R.string.settings_placeholder)
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlaceholderScreen(
+    title: String,
+    message: String
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(16.dp)
+        )
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.padding(32.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MusicNote,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

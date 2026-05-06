@@ -21,23 +21,25 @@ import com.abra.musica.data.model.Folder
 @Composable
 fun FoldersScreen(
     viewModel: FoldersViewModel = hiltViewModel(),
-    onFolderClick: (Long) -> Unit = {}
+    onFolderClick: (Long) -> Unit = {},
+    showHeader: Boolean = true
 ) {
     val folders by viewModel.folders.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // Top bar
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(R.string.folders),
-                style = MaterialTheme.typography.headlineSmall
-            )
+        if (showHeader) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.folders),
+                    style = MaterialTheme.typography.headlineSmall
+                )
+            }
         }
 
         if (folders.isEmpty()) {
