@@ -10,6 +10,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.exoplayer.ExoPlayer
 import com.abra.musica.data.model.Song
 import com.abra.musica.data.model.albumArtUri
+import com.abra.musica.data.repository.SongCollectionRepository
 import com.abra.musica.service.MusicService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +29,8 @@ import javax.inject.Singleton
 class PlayerControllerImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val player: ExoPlayer,
-    private val queueManager: QueueManager
+    private val queueManager: QueueManager,
+    private val songCollectionRepository: SongCollectionRepository
 ) : PlayerController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
@@ -69,6 +71,7 @@ class PlayerControllerImpl @Inject constructor(
                     val songId = mediaItem?.mediaId?.toLongOrNull()
                     _currentSong.value = queueManager.currentQueue.value.firstOrNull { it.id == songId }
                     _duration.value = player.duration.takeIf { it > 0 } ?: _currentSong.value?.duration ?: 0L
+                    songId?.let(::recordRecentlyPlayed)
                 }
             }
         )
@@ -94,6 +97,7 @@ class PlayerControllerImpl @Inject constructor(
 
         _currentSong.value = song
         _duration.value = song.duration
+        recordRecentlyPlayed(song.id)
     }
 
     override fun playPause() {
@@ -189,6 +193,12 @@ class PlayerControllerImpl @Inject constructor(
             ContextCompat.startForegroundService(context, intent)
         } else {
             context.startService(intent)
+        }
+    }
+
+    private fun recordRecentlyPlayed(songId: Long) {
+        scope.launch(Dispatchers.IO) {
+            songCollectionRepository.recordRecentlyPlayed(songId)
         }
     }
 }

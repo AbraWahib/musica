@@ -24,7 +24,10 @@ import com.abra.musica.ui.screens.albums.AlbumsScreen
 import com.abra.musica.ui.screens.artists.ArtistDetailScreen
 import com.abra.musica.ui.screens.artists.ArtistsScreen
 import com.abra.musica.ui.screens.folders.FoldersScreen
+import com.abra.musica.ui.screens.library.FavoriteSongsScreen
 import com.abra.musica.ui.screens.library.LibraryScreen
+import com.abra.musica.ui.screens.library.RecentlyPlayedScreen
+import com.abra.musica.ui.screens.playlists.PlaylistDetailScreen
 import com.abra.musica.ui.screens.playlists.PlaylistsScreen
 import com.abra.musica.ui.screens.search.SearchScreen
 import com.abra.musica.ui.screens.songs.SongsScreen
@@ -32,6 +35,8 @@ import com.abra.musica.ui.screens.songs.SongsScreen
 @Composable
 fun AppNavHost(
     navController: NavHostController,
+    songsReselectionCount: Int = 0,
+    libraryReselectionCount: Int = 0,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -41,6 +46,7 @@ fun AppNavHost(
     ) {
         composable(Screen.Songs.route) {
             SongsScreen(
+                reselectionCount = songsReselectionCount,
                 onAlbumClick = { albumId ->
                     navController.navigate(Screen.AlbumDetail.createRoute(albumId))
                 },
@@ -107,7 +113,9 @@ fun AppNavHost(
         composable(Screen.PlaylistDetail.route) { backStackEntry ->
             val playlistId = backStackEntry.arguments?.getString("playlistId")?.toLongOrNull()
             if (playlistId != null) {
-                // TODO: PlaylistDetailScreen(playlistId)
+                PlaylistDetailScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
             }
         }
         composable(Screen.Search.route) {
@@ -125,6 +133,7 @@ fun AppNavHost(
         }
         composable(Screen.Library.route) {
             LibraryScreen(
+                reselectionCount = libraryReselectionCount,
                 onNavigateToFavourites = {
                     navController.navigate(Screen.Favourites.route)
                 },
@@ -140,16 +149,10 @@ fun AppNavHost(
             )
         }
         composable(Screen.Favourites.route) {
-            PlaceholderScreen(
-                title = stringResource(R.string.favourites),
-                message = stringResource(R.string.favourites_placeholder)
-            )
+            FavoriteSongsScreen()
         }
         composable(Screen.RecentlyPlayed.route) {
-            PlaceholderScreen(
-                title = stringResource(R.string.recently_played),
-                message = stringResource(R.string.recently_played_placeholder)
-            )
+            RecentlyPlayedScreen()
         }
         composable(Screen.Settings.route) {
             PlaceholderScreen(

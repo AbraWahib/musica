@@ -6,8 +6,10 @@ import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.room.Room
 import com.abra.musica.data.db.MusicDatabase
+import com.abra.musica.data.db.dao.FavoriteSongDao
 import com.abra.musica.data.db.dao.PlaylistDao
 import com.abra.musica.data.db.dao.PlaylistSongDao
+import com.abra.musica.data.db.dao.RecentlyPlayedDao
 import com.abra.musica.player.PlayerController
 import com.abra.musica.player.PlayerControllerImpl
 import dagger.Module
@@ -30,7 +32,7 @@ object AppModule {
             context,
             MusicDatabase::class.java,
             "music_database"
-        ).build()
+        ).addMigrations(MusicDatabase.MIGRATION_1_2).build()
     }
 
     @Provides
@@ -43,6 +45,18 @@ object AppModule {
     @Singleton
     fun providePlaylistSongDao(database: MusicDatabase): PlaylistSongDao {
         return database.playlistSongDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideFavoriteSongDao(database: MusicDatabase): FavoriteSongDao {
+        return database.favoriteSongDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRecentlyPlayedDao(database: MusicDatabase): RecentlyPlayedDao {
+        return database.recentlyPlayedDao()
     }
 
     @Provides

@@ -126,6 +126,10 @@ class MediaStoreRepository @Inject constructor(
         emit(songs)
     }.flowOn(Dispatchers.IO)
 
+    suspend fun deleteSong(song: Song): Boolean = kotlinx.coroutines.withContext(Dispatchers.IO) {
+        context.contentResolver.delete(song.uri, null, null) > 0
+    }
+
 
     private fun String?.isUnknownAlbum(): Boolean =
         isNullOrBlank() || trim().lowercase() == "<unknown>"

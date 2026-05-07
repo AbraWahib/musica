@@ -3,7 +3,7 @@ package com.abra.musica.ui.player
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.abra.musica.data.model.Song
-import com.abra.musica.data.model.mockSong
+import com.abra.musica.data.repository.SongCollectionRepository
 import com.abra.musica.player.PlayerController
 import com.abra.musica.player.QueueManager
 import com.abra.musica.player.RepeatMode
@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -22,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class NowPlayingViewModel @Inject constructor(
     private val playerController: PlayerController,
-    private val queueManager: QueueManager
+    private val queueManager: QueueManager,
+    private val songCollectionRepository: SongCollectionRepository
 ) : ViewModel() {
 
     val currentSong: StateFlow<Song?> = playerController.currentSong
@@ -34,6 +36,9 @@ class NowPlayingViewModel @Inject constructor(
 
     val currentQueue: StateFlow<List<Song>> = queueManager.currentQueue
     val currentIndex: StateFlow<Int> = queueManager.currentIndex
+    val favoriteSongIds: StateFlow<Set<Long>> = songCollectionRepository.favoriteSongIds
+        .map { it.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
     private val _isExpanded = MutableStateFlow(false)
     val isExpanded: StateFlow<Boolean> = _isExpanded.asStateFlow()
@@ -47,16 +52,20 @@ class NowPlayingViewModel @Inject constructor(
         duration,
         repeatMode,
         shuffleEnabled,
+        favoriteSongIds,
         isExpanded
     ) { array ->
+        val song = array[0] as Song?
+        val favorites = array[6] as Set<*>
         PlayerUiState(
-            currentSong = array[0] as Song?,
+            currentSong = song,
             isPlaying = array[1] as Boolean,
             currentPosition = array[2] as Long,
             duration = array[3] as Long,
             repeatMode = array[4] as RepeatMode,
             shuffleEnabled = array[5] as Boolean,
-            isExpanded = array[6] as Boolean
+            isFavorite = song?.id?.let { favorites.contains(it) } == true,
+            isExpanded = array[7] as Boolean
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PlayerUiState())
 
@@ -68,6 +77,7 @@ class NowPlayingViewModel @Inject constructor(
             is NowPlayingEvents.SkipToPrevious -> skipToPrevious()
             is NowPlayingEvents.TogglePlayPause -> togglePlayPause()
             is NowPlayingEvents.ToggleShuffle -> toggleShuffle()
+            is NowPlayingEvents.ToggleFavorite -> toggleFavorite()
         }
     }
     fun expand() { _isExpanded.value = true }
@@ -116,6 +126,13 @@ class NowPlayingViewModel @Inject constructor(
         }
     }
 
+    private fun toggleFavorite() {
+        val songId = currentSong.value?.id ?: return
+        viewModelScope.launch {
+            songCollectionRepository.toggleFavorite(songId)
+        }
+    }
+
     fun addToQueue(song: Song) {
         viewModelScope.launch {
             playerController.addToQueue(song)
@@ -140,6 +157,4 @@ class NowPlayingViewModel @Inject constructor(
         }
     }
 }
-
-
 

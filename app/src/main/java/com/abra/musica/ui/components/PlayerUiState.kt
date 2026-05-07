@@ -10,5 +10,6 @@ data class PlayerUiState(
     val duration: Long = 0L,
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val shuffleEnabled: Boolean = false,
+    val isFavorite: Boolean = false,
     val isExpanded: Boolean = false
 )

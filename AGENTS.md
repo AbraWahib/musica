@@ -230,7 +230,9 @@ data class Playlist(
 
 ### Room Database (data/db/)
 
-Only **user-created playlists** are stored in Room. Everything else is queried live from MediaStore.
+Room stores user-created playlists plus local per-song collections that cannot be derived from
+MediaStore: favourite songs and recently played songs. Song metadata itself is still queried live
+from MediaStore and joined with stored song IDs in repositories.
 
 ```kotlin
 // PlaylistEntity — playlists table
@@ -256,6 +258,20 @@ data class PlaylistSongEntity(
     val playlistId: Long,
     val songId: Long,           // MediaStore song ID (not a FK — no Room table for songs)
     val position: Int           // For ordered playlists
+)
+
+// FavoriteSongEntity — persistent favourite song IDs
+@Entity(tableName = "favorite_songs")
+data class FavoriteSongEntity(
+    @PrimaryKey val songId: Long,
+    val addedAt: Long = System.currentTimeMillis()
+)
+
+// RecentlyPlayedEntity — latest play timestamp per song
+@Entity(tableName = "recently_played")
+data class RecentlyPlayedEntity(
+    @PrimaryKey val songId: Long,
+    val playedAt: Long = System.currentTimeMillis()
 )
 ```
 
@@ -424,7 +440,9 @@ Use `ModalBottomSheet` (Material3). The queue is a `LazyColumn` with drag-to-reo
 
 ### 7.2 Songs Screen
 - Top-level bottom-nav screen. Contains tabs for All songs, Artists, Albums, and Folders, reusing the existing section screens for those tabs.
+- Tabs are horizontally swipeable and visually centered.
 - Alphabetically sorted list (default). Support sort options: Title, Artist, Album, Duration, Date Added.
+- Song sort order is persisted locally and restored after app restart.
 - Each item: album art thumbnail (via Coil), title, artist, duration, overflow menu (→ play next, add to queue, add to playlist, go to album, go to artist, share, delete).
 - Long-press enters multi-select mode: select all, deselect all, add selected to playlist, delete selected.
 - Fast-scroll index (alphabetical letters on the right edge).
@@ -459,6 +477,8 @@ Use `ModalBottomSheet` (Material3). The queue is a `LazyColumn` with drag-to-reo
 - Top-level bottom-nav screen.
 - Shows navigation buttons for Favourite songs, Playlists, Recently played, and Settings.
 - Do not duplicate the playlist list on Library; navigate to `PlaylistsScreen` for playlist management.
+- Favourite songs are backed by Room and can be toggled from song menus, MiniPlayer, and NowPlayingScreen.
+- Recently played songs are backed by Room and updated whenever playback starts or transitions to another song.
 
 ### 7.8 Now Playing / Player Controls
 - Full details in [Section 6](#6-ui-architecture--screen-map).
@@ -852,7 +872,7 @@ AsyncImage(
 1. Add a value to the `SortOrder` enum in `data/model/SortOrder.kt`.
 2. Add a branch to the `List<Song>.sortedBy(order: SortOrder)` extension function.
 3. Add a menu item in the relevant screen's `TopBar` dropdown.
-4. Persist the selected sort order in `DataStore` keyed per section (`songs_sort_order`, `albums_sort_order`, etc.).
+4. Persist the selected sort order through `SettingsRepository` using the appropriate stable key (for songs, `songs_sort_order`).
 
 ---
 

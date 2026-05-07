@@ -17,7 +17,8 @@ import com.abra.musica.ui.navigation.Screen
 
 @Composable
 fun BottomNavBar(
-    navController: NavController
+    navController: NavController,
+    onTopLevelReselected: (String) -> Unit = {}
 ) {
     val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
 
@@ -34,11 +35,33 @@ fun BottomNavBar(
                 label = { Text(stringResource(item.labelRes)) },
                 selected = item.route == selectedTopLevelRoute(currentRoute),
                 onClick = {
-                    navController.navigate(item.route) {
-                        launchSingleTop = true
-                        restoreState = true
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                    val selectedTopLevelRoute = selectedTopLevelRoute(currentRoute)
+                    when {
+                        currentRoute == item.route -> {
+                            onTopLevelReselected(item.route)
+                        }
+
+                        selectedTopLevelRoute == item.route -> {
+                            val popped = navController.popBackStack(item.route, inclusive = false)
+                            if (!popped) {
+                                navController.navigate(item.route) {
+                                    launchSingleTop = true
+                                    restoreState = true
+                                    popUpTo(navController.graph.startDestinationId) {
+                                        saveState = true
+                                    }
+                                }
+                            }
+                        }
+
+                        else -> {
+                            navController.navigate(item.route) {
+                                launchSingleTop = true
+                                restoreState = true
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                            }
                         }
                     }
                 }

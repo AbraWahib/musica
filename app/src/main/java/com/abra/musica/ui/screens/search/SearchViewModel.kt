@@ -8,6 +8,7 @@ import com.abra.musica.data.model.Playlist
 import com.abra.musica.data.model.Song
 import com.abra.musica.data.repository.MediaStoreRepository
 import com.abra.musica.data.repository.PlaylistRepository
+import com.abra.musica.data.repository.SongCollectionRepository
 import com.abra.musica.player.PlayerController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -20,6 +21,7 @@ import javax.inject.Inject
 class SearchViewModel @Inject constructor(
     private val mediaStoreRepository: MediaStoreRepository,
     playlistRepository: PlaylistRepository,
+    private val songCollectionRepository: SongCollectionRepository,
     private val playerController: PlayerController
 ) : ViewModel() {
 
@@ -59,6 +61,10 @@ class SearchViewModel @Inject constructor(
         .catch { emit(SearchResults()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchResults())
 
+    val favoriteSongIds: StateFlow<Set<Long>> = songCollectionRepository.favoriteSongIds
+        .map { it.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
     fun setQuery(newQuery: String) {
         _query.value = newQuery
     }
@@ -66,6 +72,20 @@ class SearchViewModel @Inject constructor(
     fun playSong(song: Song) {
         viewModelScope.launch {
             playerController.play(song, results.value.songs)
+        }
+    }
+
+    fun playNext(song: Song) {
+        playerController.addToQueueNext(song)
+    }
+
+    fun addToQueue(song: Song) {
+        playerController.addToQueue(song)
+    }
+
+    fun toggleFavorite(song: Song) {
+        viewModelScope.launch {
+            songCollectionRepository.toggleFavorite(song.id)
         }
     }
 }

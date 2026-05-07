@@ -9,4 +9,5 @@ sealed class NowPlayingEvents {
     class TogglePlayPause(): NowPlayingEvents()
     class SkipToNext(): NowPlayingEvents()
     class SetRepeatMode(val repeatMode: RepeatMode): NowPlayingEvents()
+    class ToggleFavorite(): NowPlayingEvents()
 }

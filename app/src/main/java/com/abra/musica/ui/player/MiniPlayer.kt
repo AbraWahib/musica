@@ -30,9 +30,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -61,7 +58,7 @@ fun MiniPlayer(
 ) {
     val currentSong = uiState.currentSong
     val isPlaying = uiState.isPlaying
-    val isFavorite by rememberSaveable(currentSong?.id) { mutableStateOf(false) }
+    val isFavorite = uiState.isFavorite
     val pillShape = RoundedCornerShape(28.dp)
     val overlayBrush = Brush.horizontalGradient(
         colors = listOf(
@@ -164,7 +161,11 @@ fun MiniPlayer(
                             )
                         }
 
-                        IconButton(onClick = { /* todo: toggle favorite*/ }) {
+                        IconButton(
+                            onClick = {
+                                onPlayPauseClick(NowPlayingEvents.ToggleFavorite())
+                            }
+                        ) {
                             Icon(
                                 imageVector = if (isFavorite) {
                                     Icons.Filled.Favorite
@@ -189,5 +190,4 @@ fun MiniPlayer(
         }
     }
 }
-
 

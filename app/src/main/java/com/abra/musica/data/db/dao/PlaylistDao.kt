@@ -7,8 +7,16 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface PlaylistDao {
-    @Query("SELECT * FROM playlists ORDER BY createdAt DESC")
-    fun getAllPlaylists(): Flow<List<PlaylistEntity>>
+    @Query(
+        """
+        SELECT playlists.id, playlists.name, playlists.createdAt, COUNT(playlist_songs.songId) AS songCount
+        FROM playlists
+        LEFT JOIN playlist_songs ON playlists.id = playlist_songs.playlistId
+        GROUP BY playlists.id
+        ORDER BY playlists.createdAt DESC
+        """
+    )
+    fun getAllPlaylistsWithSongCount(): Flow<List<PlaylistWithSongCount>>
 
     @Query("SELECT * FROM playlists WHERE id = :id")
     suspend fun getPlaylistById(id: Long): PlaylistEntity?
@@ -25,3 +33,10 @@ interface PlaylistDao {
     @Query("DELETE FROM playlists WHERE id = :id")
     suspend fun deletePlaylistById(id: Long)
 }
+
+data class PlaylistWithSongCount(
+    val id: Long,
+    val name: String,
+    val createdAt: Long,
+    val songCount: Int
+)

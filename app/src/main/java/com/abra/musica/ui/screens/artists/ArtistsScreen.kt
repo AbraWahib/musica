@@ -25,6 +25,7 @@ fun ArtistsScreen(
     showHeader: Boolean = true
 ) {
     val artists by viewModel.artists.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         if (showHeader) {
@@ -42,8 +43,14 @@ fun ArtistsScreen(
             }
         }
 
-        if (artists.isEmpty()) {
-            // Empty state
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (artists.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center

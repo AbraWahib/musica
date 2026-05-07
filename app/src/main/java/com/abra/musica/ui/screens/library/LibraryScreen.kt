@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.ChevronRight
@@ -20,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -29,11 +31,19 @@ import com.abra.musica.R
 
 @Composable
 fun LibraryScreen(
+    reselectionCount: Int = 0,
     onNavigateToFavourites: () -> Unit = {},
     onNavigateToPlaylists: () -> Unit = {},
     onNavigateToRecentlyPlayed: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {}
 ) {
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(reselectionCount) {
+        if (reselectionCount <= 0) return@LaunchedEffect
+        listState.animateScrollToItem(0)
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
             text = stringResource(R.string.library),
@@ -42,6 +52,7 @@ fun LibraryScreen(
         )
 
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp)
         ) {

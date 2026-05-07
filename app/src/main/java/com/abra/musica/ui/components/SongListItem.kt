@@ -1,19 +1,16 @@
 package com.abra.musica.ui.components
 
 import android.util.Log
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,8 +18,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -37,9 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,9 +49,12 @@ import com.abra.musica.data.model.albumArtUri
 fun SongListItem(
     song: Song,
     onClick: () -> Unit = {},
+    isFavorite: Boolean = false,
     showOverflowMenu: Boolean = true,
+    onPlayNext: () -> Unit = {},
     onAddToQueue: () -> Unit = {},
     onAddToPlaylist: () -> Unit = {},
+    onToggleFavorite: () -> Unit = {},
     onGoToAlbum: () -> Unit = {},
     onGoToArtist: () -> Unit = {},
     onShare: () -> Unit = {},
@@ -125,7 +124,39 @@ fun SongListItem(
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.play_next)) },
                     onClick = {
+                        onPlayNext()
+                        showMenu = false
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.add_to_queue)) },
+                    onClick = {
                         onAddToQueue()
+                        showMenu = false
+                    }
+                )
+                DropdownMenuItem(
+                    leadingIcon = {
+                        Icon(
+                            imageVector = if (isFavorite) {
+                                Icons.Filled.Favorite
+                            } else {
+                                Icons.Outlined.FavoriteBorder
+                            },
+                            contentDescription = null
+                        )
+                    },
+                    text = {
+                        Text(
+                            if (isFavorite) {
+                                stringResource(R.string.remove_from_favorites)
+                            } else {
+                                stringResource(R.string.add_to_favorites)
+                            }
+                        )
+                    },
+                    onClick = {
+                        onToggleFavorite()
                         showMenu = false
                     }
                 )

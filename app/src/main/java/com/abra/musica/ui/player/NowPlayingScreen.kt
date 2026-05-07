@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -161,10 +162,26 @@ fun NowPlayingScreen(
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     IconButton(
-                        onClick = {},
+                        onClick = { onEvent(NowPlayingEvents.ToggleFavorite()) },
                         modifier = Modifier.padding(start = 8.dp)
                     ) {
-                        Icon(Icons.Default.Favorite, contentDescription = null)
+                        Icon(
+                            imageVector = if (playerState.isFavorite) {
+                                Icons.Default.Favorite
+                            } else {
+                                Icons.Outlined.FavoriteBorder
+                            },
+                            contentDescription = if (playerState.isFavorite) {
+                                stringResource(R.string.remove_from_favorites)
+                            } else {
+                                stringResource(R.string.add_to_favorites)
+                            },
+                            tint = if (playerState.isFavorite) {
+                                Color(0xFFFF6B6B)
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -344,4 +361,3 @@ private fun Long.formatDuration(): String {
     val seconds = (this % 60000) / 1000
     return "%d:%02d".format(minutes, seconds)
 }
-

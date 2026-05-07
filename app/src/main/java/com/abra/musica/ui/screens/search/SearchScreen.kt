@@ -49,6 +49,7 @@ fun SearchScreen(
 ) {
     val query by viewModel.query.collectAsStateWithLifecycle()
     val results by viewModel.results.collectAsStateWithLifecycle()
+    val favoriteSongIds by viewModel.favoriteSongIds.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
@@ -84,7 +85,11 @@ fun SearchScreen(
             )
             else -> SearchResultsList(
                 results = results,
+                favoriteSongIds = favoriteSongIds,
                 onSongClick = viewModel::playSong,
+                onPlayNext = viewModel::playNext,
+                onAddToQueue = viewModel::addToQueue,
+                onToggleFavorite = viewModel::toggleFavorite,
                 onArtistClick = onArtistClick,
                 onAlbumClick = onAlbumClick,
                 onPlaylistClick = onPlaylistClick
@@ -96,7 +101,11 @@ fun SearchScreen(
 @Composable
 private fun SearchResultsList(
     results: SearchResults,
+    favoriteSongIds: Set<Long>,
     onSongClick: (com.abra.musica.data.model.Song) -> Unit,
+    onPlayNext: (com.abra.musica.data.model.Song) -> Unit,
+    onAddToQueue: (com.abra.musica.data.model.Song) -> Unit,
+    onToggleFavorite: (com.abra.musica.data.model.Song) -> Unit,
     onArtistClick: (Long) -> Unit,
     onAlbumClick: (Long) -> Unit,
     onPlaylistClick: (Long) -> Unit
@@ -110,7 +119,13 @@ private fun SearchResultsList(
             items(results.songs.take(6), key = { it.id }) { song ->
                 SongListItem(
                     song = song,
-                    onClick = { onSongClick(song) }
+                    onClick = { onSongClick(song) },
+                    isFavorite = song.id in favoriteSongIds,
+                    onPlayNext = { onPlayNext(song) },
+                    onAddToQueue = { onAddToQueue(song) },
+                    onToggleFavorite = { onToggleFavorite(song) },
+                    onGoToAlbum = { onAlbumClick(song.albumId) },
+                    onGoToArtist = { onArtistClick(song.artistId) }
                 )
             }
         }

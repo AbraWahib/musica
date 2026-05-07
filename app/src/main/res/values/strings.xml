@@ -32,6 +32,7 @@
     <string name="repeat">Repeat</string>
     <string name="queue">Queue</string>
     <string name="add_to_playlist">Add to Playlist</string>
+    <string name="add_to_queue">Add to queue</string>
     <string name="remove_from_playlist">Remove from Playlist</string>
     <string name="delete">Delete</string>
     <string name="share">Share</string>
@@ -55,10 +56,12 @@
     <string name="sort_date_added">Date Added</string>
     <string name="create_playlist">Create Playlist</string>
     <string name="playlist_name">Playlist Name</string>
+    <string name="new_playlist_name">New playlist name</string>
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="rename">Rename</string>
     <string name="delete_playlist">Delete Playlist</string>
+    <string name="delete_playlist_confirm">Delete playlist "%1$s"?</string>
     <string name="add_songs">Add Songs</string>
     <string name="clear_queue">Clear Queue</string>
     <string name="sleep_timer">Sleep Timer</string>
@@ -77,6 +80,7 @@
     <string name="artist_info">%1$d albums • %2$d songs</string>
     <string name="no_playlists">No playlists yet</string>
     <string name="create_first_playlist">Create your first playlist to get started</string>
+    <string name="empty_playlist">No songs in this playlist yet</string>
     <string name="no_song_playing">No song playing</string>
     <string name="playback_notification_channel">Playback</string>
     <string name="notification_artist_album">%1$s • %2$s</string>

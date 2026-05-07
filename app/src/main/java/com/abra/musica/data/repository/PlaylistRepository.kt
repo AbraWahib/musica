@@ -1,6 +1,7 @@
 package com.abra.musica.data.repository
 
 import com.abra.musica.data.db.dao.PlaylistDao
+import com.abra.musica.data.db.dao.PlaylistWithSongCount
 import com.abra.musica.data.db.dao.PlaylistSongDao
 import com.abra.musica.data.db.entity.PlaylistEntity
 import com.abra.musica.data.db.entity.PlaylistSongEntity
@@ -18,7 +19,7 @@ class PlaylistRepository @Inject constructor(
 ) {
 
     fun getAllPlaylists(): Flow<List<Playlist>> {
-        return playlistDao.getAllPlaylists().map { entities ->
+        return playlistDao.getAllPlaylistsWithSongCount().map { entities ->
             entities.map { it.toPlaylist() }
         }
     }
@@ -28,24 +29,39 @@ class PlaylistRepository @Inject constructor(
     }
 
     suspend fun createPlaylist(name: String): Long {
-        val entity = PlaylistEntity(name = name)
+        val trimmedName = name.trim()
+        require(trimmedName.isNotBlank()) { "Playlist name cannot be blank" }
+        val entity = PlaylistEntity(name = trimmedName)
         return playlistDao.insertPlaylist(entity)
     }
 
     suspend fun updatePlaylist(playlist: Playlist) {
         val entity = PlaylistEntity(
             id = playlist.id,
-            name = playlist.name,
+            name = playlist.name.trim(),
             createdAt = playlist.createdAt
         )
         playlistDao.updatePlaylist(entity)
+    }
+
+    suspend fun renamePlaylist(playlistId: Long, newName: String) {
+        val existing = playlistDao.getPlaylistById(playlistId) ?: return
+        val trimmedName = newName.trim()
+        require(trimmedName.isNotBlank()) { "Playlist name cannot be blank" }
+        playlistDao.updatePlaylist(existing.copy(name = trimmedName))
     }
 
     suspend fun deletePlaylist(id: Long) {
         playlistDao.deletePlaylistById(id)
     }
 
-    suspend fun addSongToPlaylist(playlistId: Long, songId: Long) {
+    suspend fun addSongToPlaylist(playlistId: Long, songId: Long): Boolean {
+        val alreadyInPlaylist = playlistSongDao
+            .getSongsForPlaylist(playlistId)
+            .first()
+            .any { it.songId == songId }
+        if (alreadyInPlaylist) return false
+
         val currentCount = playlistSongDao.getSongCountForPlaylist(playlistId)
         val playlistSong = PlaylistSongEntity(
             playlistId = playlistId,
@@ -53,6 +69,7 @@ class PlaylistRepository @Inject constructor(
             position = currentCount
         )
         playlistSongDao.insertPlaylistSong(playlistSong)
+        return true
     }
 
     suspend fun removeSongFromPlaylist(playlistId: Long, songId: Long) {
@@ -97,6 +114,15 @@ class PlaylistRepository @Inject constructor(
             id = id,
             name = name,
             songCount = 0, // We'll calculate this when needed
+            createdAt = createdAt
+        )
+    }
+
+    private fun PlaylistWithSongCount.toPlaylist(): Playlist {
+        return Playlist(
+            id = id,
+            name = name,
+            songCount = songCount,
             createdAt = createdAt
         )
     }
