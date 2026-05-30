@@ -356,6 +356,7 @@ interface PlayerController {
     val duration: StateFlow<Long>
     val repeatMode: StateFlow<RepeatMode>          // OFF, ONE, ALL
     val shuffleEnabled: StateFlow<Boolean>
+    val sleepTimerRemainingMs: StateFlow<Long>
 
     fun play(song: Song, queue: List<Song>)
     fun playPause()
@@ -368,6 +369,8 @@ interface PlayerController {
     fun addToQueueNext(song: Song)
     fun removeFromQueue(index: Int)
     fun reorderQueue(from: Int, to: Int)
+    fun setSleepTimer(durationMs: Long)
+    fun cancelSleepTimer()
 }
 
 enum class RepeatMode { OFF, ONE, ALL }
@@ -378,6 +381,8 @@ enum class RepeatMode { OFF, ONE, ALL }
 - **Repeat ONE** loops the current track.
 - **Repeat ALL** wraps back to start when queue ends.
 - `skipPrevious()` — if `currentPosition > 3000ms`, seek to 0; otherwise go to previous track.
+- Shuffle and repeat mode are persisted through `SettingsRepository` and must be restored when the app starts.
+- Sleep timer state is controlled through `PlayerController`; when the timer expires playback pauses.
 
 ---
 
@@ -436,13 +441,16 @@ Use `ModalBottomSheet` (Material3). The queue is a `LazyColumn` with drag-to-reo
 - Trigger MediaStore scan on app launch and when `ContentObserver` detects changes.
 - Show an empty state illustration when no music is found.
 - Provide a "Rescan" button in the overflow menu.
-- Filter: only show files where `IS_MUSIC = 1` and `DURATION >= 30000` (≥30 seconds).
+- Filter: only show files where `IS_MUSIC = 1`, `DURATION` is at least the user-selected minimum length, and the folder is included by the Settings folder filter.
+- `MediaStoreRepository.getSongs()` is the filtered source of truth used by songs, albums, artists, folders, and their detail screens. Use `getAvailableFolders()` only for the Settings folder picker so excluded folders can still be re-enabled.
 
 ### 7.2 Songs Screen
 - Top-level bottom-nav screen. Contains tabs for All songs, Artists, Albums, and Folders, reusing the existing section screens for those tabs.
 - Tabs are horizontally swipeable and visually centered.
-- Alphabetically sorted list (default). Support sort options: Title, Artist, Album, Duration, Date Added.
+- Alphabetically sorted list (default). Support sort options: Name, Time, Artist, Album, and Duration with ascending/descending direction.
 - Song sort order is persisted locally and restored after app restart.
+- Sort is chosen with a dialog, not a dropdown menu.
+- The All songs toolbar row includes a play icon "Play All" button with the current song count; it starts playback from the current filtered/sorted list.
 - Each item: album art thumbnail (via Coil), title, artist, duration, overflow menu (→ play next, add to queue, add to playlist, go to album, go to artist, share, delete).
 - Long-press enters multi-select mode: select all, deselect all, add selected to playlist, delete selected.
 - Fast-scroll index (alphabetical letters on the right edge).
@@ -493,20 +501,21 @@ Use `ModalBottomSheet` (Material3). The queue is a `LazyColumn` with drag-to-reo
 - Tapping any queue item plays it immediately.
 
 ### 7.10 Sleep Timer
-- Settings screen entry → choose duration (15 / 30 / 45 / 60 min, or custom).
-- Countdown shown in the notification and optionally on NowPlayingScreen.
-- When timer expires, fade out volume over 10 seconds then pause.
+- Settings screen entry → choose Off / 15 / 30 / 45 / 60 minutes.
+- Countdown is exposed by `PlayerController.sleepTimerRemainingMs`.
+- When timer expires, pause playback.
 
 ### 7.11 Equalizer
 - Launch system equalizer via `Intent("android.media.action.DISPLAY_AUDIO_EFFECT_CONTROL_PANEL")` with the ExoPlayer `audioSessionId`.
 - Do not implement a custom equalizer UI in v1.
 
 ### 7.12 Settings Screen
+- Library filters: minimum song length slider and folder inclusion switches for local folders that contain music.
+- Empty folder selection means "scan all folders"; selecting specific folders limits `getSongs()` to those folders.
+- Sleep timer controls are available from Settings and call `PlayerController.setSleepTimer(...)` / `cancelSleepTimer()`.
 - Theme: System default / Light / Dark.
 - Sort orders per section (saved in DataStore).
 - Grid column count for Albums (2 / 3).
-- Sleep timer.
-- Excluded folders (folders whose music will be hidden).
 - About section: version, licenses.
 
 ---
@@ -592,11 +601,21 @@ val artUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
 
 // File deletion
 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-    // Use MediaStore.createDeleteRequest (shows system dialog)
+    // Show Musica's permanent-delete confirmation first, then launch
+    // MediaStore.createDeleteRequest so Android grants write/delete consent.
 } else {
-    // Delete via ContentResolver.delete
+    // API 29: catch RecoverableSecurityException and launch its userAction.
+    // API < 29: delete via ContentResolver.delete after confirmation.
 }
 ```
+
+### Song Deletion UX
+- Never call `ContentResolver.delete(...)` directly from a menu click.
+- First show a simple confirmation dialog explaining that the song will be deleted permanently.
+- After the user confirms, route deletion through `MediaStoreRepository.deleteSong(...)`.
+- On Android 11+ (API 30+), use `MediaStore.createDeleteRequest(...)` and launch the returned `IntentSender`.
+- On Android 10 (API 29), catch `RecoverableSecurityException` and launch its `userAction`.
+- Do not let `SecurityException` escape to the UI; return an error state or a user-consent request instead.
 
 ---
 
@@ -660,6 +679,8 @@ val playerViewModel: NowPlayingViewModel = hiltViewModel(
 - Song titles: `titleMedium`. Artist names: `bodyMedium` with reduced alpha.
 
 ### Component Conventions
+- Screens with list content should use Material3 `TopAppBar` with `TopAppBarDefaults.enterAlwaysScrollBehavior(...)` instead of custom/collapsing top bars unless a feature explicitly requires otherwise.
+
 ```kotlin
 // Album art loading — always use this pattern with Coil
 AsyncImage(

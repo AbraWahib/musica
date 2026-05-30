@@ -23,6 +23,7 @@ import com.abra.musica.ui.screens.albums.AlbumDetailScreen
 import com.abra.musica.ui.screens.albums.AlbumsScreen
 import com.abra.musica.ui.screens.artists.ArtistDetailScreen
 import com.abra.musica.ui.screens.artists.ArtistsScreen
+import com.abra.musica.ui.screens.folders.FolderDetailScreen
 import com.abra.musica.ui.screens.folders.FoldersScreen
 import com.abra.musica.ui.screens.library.FavoriteSongsScreen
 import com.abra.musica.ui.screens.library.LibraryScreen
@@ -30,6 +31,7 @@ import com.abra.musica.ui.screens.library.RecentlyPlayedScreen
 import com.abra.musica.ui.screens.playlists.PlaylistDetailScreen
 import com.abra.musica.ui.screens.playlists.PlaylistsScreen
 import com.abra.musica.ui.screens.search.SearchScreen
+import com.abra.musica.ui.screens.settings.SettingsScreen
 import com.abra.musica.ui.screens.songs.SongsScreen
 
 @Composable
@@ -95,12 +97,18 @@ fun AppNavHost(
             }
         }
         composable(Screen.Folders.route) {
-            FoldersScreen()
+            FoldersScreen(
+                onFolderClick = { folderId ->
+                    navController.navigate(Screen.FolderDetail.createRoute(folderId))
+                }
+            )
         }
         composable(Screen.FolderDetail.route) { backStackEntry ->
             val folderId = backStackEntry.arguments?.getString("folderId")?.toLongOrNull()
             if (folderId != null) {
-                // TODO: FolderDetailScreen(folderId)
+                FolderDetailScreen(
+                    onBackClick = { navController.popBackStack() }
+                )
             }
         }
         composable(Screen.Playlists.route) {
@@ -155,9 +163,8 @@ fun AppNavHost(
             RecentlyPlayedScreen()
         }
         composable(Screen.Settings.route) {
-            PlaceholderScreen(
-                title = stringResource(R.string.settings),
-                message = stringResource(R.string.settings_placeholder)
+            SettingsScreen(
+                onBackClick = { navController.popBackStack() }
             )
         }
     }

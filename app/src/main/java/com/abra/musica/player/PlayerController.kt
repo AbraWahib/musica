@@ -13,6 +13,7 @@ interface PlayerController {
     val duration: StateFlow<Long>
     val repeatMode: StateFlow<RepeatMode>          // OFF, ONE, ALL
     val shuffleEnabled: StateFlow<Boolean>
+    val sleepTimerRemainingMs: StateFlow<Long>
 
     fun play(song: Song, queue: List<Song>)
     fun playPause()
@@ -25,6 +26,8 @@ interface PlayerController {
     fun addToQueueNext(song: Song)
     fun removeFromQueue(index: Int)
     fun reorderQueue(from: Int, to: Int)
+    fun setSleepTimer(durationMs: Long)
+    fun cancelSleepTimer()
 }
 
 enum class RepeatMode { OFF, ONE, ALL }

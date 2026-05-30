@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -18,6 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.abra.musica.R
 import com.abra.musica.data.model.Artist
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ArtistsScreen(
     viewModel: ArtistsViewModel = hiltViewModel(),
@@ -26,22 +28,28 @@ fun ArtistsScreen(
 ) {
     val artists by viewModel.artists.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        if (showHeader) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.artists),
-                    style = MaterialTheme.typography.headlineSmall
+    Scaffold(
+        modifier = if (showHeader) {
+            Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)
+        } else {
+            Modifier.fillMaxSize()
+        },
+        topBar = {
+            if (showHeader) {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.artists)) },
+                    scrollBehavior = scrollBehavior
                 )
             }
         }
+    ) { innerPadding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+    ) {
 
         if (isLoading) {
             Box(
@@ -85,6 +93,7 @@ fun ArtistsScreen(
                 }
             }
         }
+    }
     }
 }
 

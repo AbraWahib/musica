@@ -9,5 +9,6 @@ enum class SortOrder {
     ALBUM_DESC,
     DURATION_ASC,
     DURATION_DESC,
+    DATE_ADDED_ASC,
     DATE_ADDED_DESC
 }

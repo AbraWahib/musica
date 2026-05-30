@@ -1,5 +1,8 @@
 package com.abra.musica.data.repository
 
+import android.annotation.SuppressLint
+import android.app.RecoverableSecurityException
+import android.content.IntentSender
 import android.content.ContentUris
 import android.content.Context
 import android.net.Uri
@@ -13,17 +16,31 @@ import com.abra.musica.data.model.Song
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class MediaStoreRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val settingsRepository: SettingsRepository
 ) {
 
-    fun getSongs(): Flow<List<Song>> = flow {
+    fun getSongs(): Flow<List<Song>> = combine(
+        querySongs(),
+        settingsRepository.minimumSongDurationMs,
+        settingsRepository.includedFolderPaths
+    ) { songs, minimumDurationMs, includedFolderPaths ->
+        songs.filter { song ->
+            song.duration >= minimumDurationMs &&
+                (includedFolderPaths.isEmpty() || song.folderPath() in includedFolderPaths)
+        }
+    }
+
+    private fun querySongs(): Flow<List<Song>> = flow {
         val songs = mutableListOf<Song>()
         val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val useRelativePath = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
@@ -126,67 +143,58 @@ class MediaStoreRepository @Inject constructor(
         emit(songs)
     }.flowOn(Dispatchers.IO)
 
-    suspend fun deleteSong(song: Song): Boolean = kotlinx.coroutines.withContext(Dispatchers.IO) {
-        context.contentResolver.delete(song.uri, null, null) > 0
+    suspend fun deleteSong(song: Song): DeleteSongResult = kotlinx.coroutines.withContext(Dispatchers.IO) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val request = MediaStore.createDeleteRequest(context.contentResolver, listOf(song.uri))
+            return@withContext DeleteSongResult.NeedsUserConsent(request.intentSender)
+        }
+
+        try {
+            val deleted = context.contentResolver.delete(song.uri, null, null) > 0
+            if (deleted) {
+                DeleteSongResult.Deleted
+            } else {
+                DeleteSongResult.Failed
+            }
+        } catch (securityException: SecurityException) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                securityException.toRecoverableDeleteRequest()
+            } else {
+                DeleteSongResult.Failed
+            }
+        }
     }
 
 
     private fun String?.isUnknownAlbum(): Boolean =
         isNullOrBlank() || trim().lowercase() == "<unknown>"
 
-    fun getAlbums(): Flow<List<Album>> = flow {
-        val knownAlbums = mutableListOf<Album>()
-        val unknownAlbumIds = mutableListOf<Long>()
-
-        val uri = MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(
-            MediaStore.Audio.Albums._ID,
-            MediaStore.Audio.Albums.ALBUM,
-            MediaStore.Audio.Albums.ARTIST,
-            MediaStore.Audio.Albums.NUMBER_OF_SONGS,
-            MediaStore.Audio.Albums.FIRST_YEAR,
-        )
-
-        context.contentResolver.query(
-            uri, projection, null, null,
-            "${MediaStore.Audio.Albums.ALBUM} ASC"
-        )?.use { cursor ->
-            val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums._ID)
-            val titleCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ALBUM)
-            val artistCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.ARTIST)
-            val songCountCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.NUMBER_OF_SONGS)
-            val yearCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Albums.FIRST_YEAR)
-
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(idCol)
-                val title = cursor.getString(titleCol)
-
-                if (title.isUnknownAlbum()) {
-                    // Collect the IDs — we'll merge these into one virtual album
-                    unknownAlbumIds += id
+    fun getAlbums(): Flow<List<Album>> = getSongs().map { songs ->
+        songs.groupBy { song ->
+            if (song.album.isUnknownAlbum()) UNKNOWN_ID else song.albumId
+        }.map { (albumId, albumSongs) ->
+            val firstSong = albumSongs.first()
+            Album(
+                id = albumId,
+                title = if (albumId == UNKNOWN_ID) "Unknown Album" else firstSong.album,
+                artist = if (albumSongs.map { it.artist }.distinct().size > 1) {
+                    "Various Artists"
                 } else {
-                    knownAlbums += Album(
-                        id = id,
-                        title = title!!,
-                        artist = cursor.getString(artistCol) ?: "Unknown Artist",
-                        songCount = cursor.getInt(songCountCol),
-                        year = cursor.getInt(yearCol),
-                        artUri = ContentUris.withAppendedId(
-                            "content://media/external/audio/albumart".toUri(), id
-                        )
+                    firstSong.artist
+                },
+                songCount = albumSongs.size,
+                year = albumSongs.map { it.year }.filter { it > 0 }.minOrNull() ?: 0,
+                artUri = if (albumId == UNKNOWN_ID) {
+                    Uri.EMPTY
+                } else {
+                    ContentUris.withAppendedId(
+                        "content://media/external/audio/albumart".toUri(),
+                        albumId
                     )
                 }
-            }
-        }
-
-        val result = if (unknownAlbumIds.isEmpty()) {
-            knownAlbums
-        } else {
-            knownAlbums + buildUnknownAlbum(unknownAlbumIds)
-        }
-
-        emit(result)
-    }.flowOn(Dispatchers.IO)
+            )
+        }.sortedBy { it.title.lowercase() }
+    }
 
     private fun buildUnknownAlbum(unknownAlbumIds: List<Long>): Album {
         // One focused query: count songs that belong to any of the unknown album IDs
@@ -221,54 +229,18 @@ class MediaStoreRepository @Inject constructor(
     private fun String?.isUnknownArtist(): Boolean =
         isNullOrBlank() || trim().lowercase() == "<unknown>"
 
-    fun getArtists(): Flow<List<Artist>> = flow {
-        val knownArtists = mutableListOf<Artist>()
-        val unknownArtistIds = mutableListOf<Long>()
-
-        val uri = MediaStore.Audio.Artists.EXTERNAL_CONTENT_URI
-        val projection = arrayOf(
-            MediaStore.Audio.Artists._ID,
-            MediaStore.Audio.Artists.ARTIST,
-            MediaStore.Audio.Artists.NUMBER_OF_ALBUMS,
-            MediaStore.Audio.Artists.NUMBER_OF_TRACKS,
-        )
-
-        context.contentResolver.query(
-            uri, projection, null, null,
-            "${MediaStore.Audio.Artists.ARTIST} ASC"
-        )?.use { cursor ->
-            val idCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Artists._ID)
-            val nameCol = cursor.getColumnIndexOrThrow(MediaStore.Audio.Artists.ARTIST)
-            val albumCountCol =
-                cursor.getColumnIndexOrThrow(MediaStore.Audio.Artists.NUMBER_OF_ALBUMS)
-            val songCountCol =
-                cursor.getColumnIndexOrThrow(MediaStore.Audio.Artists.NUMBER_OF_TRACKS)
-
-            while (cursor.moveToNext()) {
-                val id = cursor.getLong(idCol)
-                val name = cursor.getString(nameCol)
-
-                if (name.isUnknownArtist()) {
-                    unknownArtistIds += id
-                } else {
-                    knownArtists += Artist(
-                        id = id,
-                        name = name!!,
-                        albumCount = cursor.getInt(albumCountCol),
-                        songCount = cursor.getInt(songCountCol)
-                    )
-                }
-            }
-        }
-
-        val result = if (unknownArtistIds.isEmpty()) {
-            knownArtists
-        } else {
-            knownArtists + buildUnknownArtist(unknownArtistIds)
-        }
-
-        emit(result)
-    }.flowOn(Dispatchers.IO)
+    fun getArtists(): Flow<List<Artist>> = getSongs().map { songs ->
+        songs.groupBy { song ->
+            if (song.artist.isUnknownArtist()) UNKNOWN_ID else song.artistId
+        }.map { (artistId, artistSongs) ->
+            Artist(
+                id = artistId,
+                name = if (artistId == UNKNOWN_ID) "Unknown Artist" else artistSongs.first().artist,
+                albumCount = artistSongs.map { it.albumId }.distinct().size,
+                songCount = artistSongs.size
+            )
+        }.sortedBy { it.name.lowercase() }
+    }
 
     private fun buildUnknownArtist(unknownArtistIds: List<Long>): Artist {
         val placeholders = unknownArtistIds.joinToString(",") { "?" }
@@ -306,7 +278,22 @@ class MediaStoreRepository @Inject constructor(
         )
     }
 
-    fun getFolders(): Flow<List<Folder>> = flow {
+    fun getFolders(): Flow<List<Folder>> = getSongs().map { songs ->
+        songs.groupBy { it.folderPath() }
+            .map { (path, folderSongs) ->
+                Folder(
+                    id = path.ifBlank { folderSongs.first().folderName }.hashCode().toLong(),
+                    name = folderSongs.first().folderName,
+                    path = path,
+                    songCount = folderSongs.size
+                )
+            }
+            .sortedBy { it.name.lowercase() }
+    }
+
+    fun getAvailableFolders(): Flow<List<Folder>> = queryAvailableFolders()
+
+    private fun queryAvailableFolders(): Flow<List<Folder>> = flow {
         val useRelativePath = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
         val projection = buildList {
             add(MediaStore.Audio.Media._ID)
@@ -372,6 +359,29 @@ class MediaStoreRepository @Inject constructor(
     }.flowOn(Dispatchers.IO)
 
 
+    private fun Song.folderPath(): String {
+        return path.substringBeforeLast("/", missingDelimiterValue = "")
+            .ifBlank { "/$folderName".trimEnd('/') }
+    }
+
+    private companion object {
+        const val UNKNOWN_ID = -1L
+    }
+}
+
+sealed interface DeleteSongResult {
+    data object Deleted : DeleteSongResult
+    data object Failed : DeleteSongResult
+    data class NeedsUserConsent(val intentSender: IntentSender) : DeleteSongResult
+}
+
+@SuppressLint("NewApi")
+private fun SecurityException.toRecoverableDeleteRequest(): DeleteSongResult {
+    return if (this is RecoverableSecurityException) {
+        DeleteSongResult.NeedsUserConsent(userAction.actionIntent.intentSender)
+    } else {
+        DeleteSongResult.Failed
+    }
 }
 
 private fun normalizeFolderPath(relativePath: String?): String {

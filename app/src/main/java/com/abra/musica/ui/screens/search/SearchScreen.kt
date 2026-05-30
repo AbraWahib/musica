@@ -38,6 +38,7 @@ import com.abra.musica.R
 import com.abra.musica.data.model.Album
 import com.abra.musica.data.model.Artist
 import com.abra.musica.data.model.Playlist
+import com.abra.musica.ui.components.MainScreenCustomAppBar
 import com.abra.musica.ui.components.SongListItem
 
 @Composable
@@ -52,11 +53,7 @@ fun SearchScreen(
     val favoriteSongIds by viewModel.favoriteSongIds.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = stringResource(R.string.search),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp)
-        )
+        MainScreenCustomAppBar(title = stringResource(R.string.search))
         OutlinedTextField(
             value = query,
             onValueChange = viewModel::setQuery,

@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.abra.musica.R
+import com.abra.musica.ui.components.MainScreenCustomAppBar
 
 @Composable
 fun LibraryScreen(
@@ -45,11 +46,7 @@ fun LibraryScreen(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        Text(
-            text = stringResource(R.string.library),
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(16.dp)
-        )
+        MainScreenCustomAppBar(title = stringResource(R.string.library))
 
         LazyColumn(
             state = listState,

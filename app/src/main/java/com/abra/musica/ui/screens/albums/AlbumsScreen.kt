@@ -12,6 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -22,6 +23,7 @@ import com.abra.musica.R
 import com.abra.musica.data.model.Album
 import com.abra.musica.ui.screens.albums.components.AlbumCard
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AlbumsScreen(
     viewModel: AlbumsViewModel = hiltViewModel(),
@@ -29,22 +31,28 @@ fun AlbumsScreen(
     showHeader: Boolean = true
 ) {
     val albums by viewModel.albums.collectAsStateWithLifecycle()
+    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        if (showHeader) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = stringResource(R.string.albums),
-                    style = MaterialTheme.typography.headlineSmall
+    Scaffold(
+        modifier = if (showHeader) {
+            Modifier.fillMaxSize().nestedScroll(scrollBehavior.nestedScrollConnection)
+        } else {
+            Modifier.fillMaxSize()
+        },
+        topBar = {
+            if (showHeader) {
+                TopAppBar(
+                    title = { Text(stringResource(R.string.albums)) },
+                    scrollBehavior = scrollBehavior
                 )
             }
         }
+    ) { innerPadding ->
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+    ) {
 
         if (albums.isEmpty()) {
             // Empty state
@@ -88,5 +96,5 @@ fun AlbumsScreen(
             }
         }
     }
+    }
 }
-

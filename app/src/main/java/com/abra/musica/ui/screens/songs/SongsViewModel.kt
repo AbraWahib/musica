@@ -1,5 +1,6 @@
 package com.abra.musica.ui.screens.songs
 
+import android.content.IntentSender
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,7 @@ import com.abra.musica.data.repository.MediaStoreRepository
 import com.abra.musica.data.repository.PlaylistRepository
 import com.abra.musica.data.repository.SettingsRepository
 import com.abra.musica.data.repository.SongCollectionRepository
+import com.abra.musica.data.repository.DeleteSongResult
 import com.abra.musica.player.PlayerController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -26,6 +28,8 @@ class SongsViewModel @Inject constructor(
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    private val _deletePermissionRequests = MutableSharedFlow<IntentSender>()
+    val deletePermissionRequests: SharedFlow<IntentSender> = _deletePermissionRequests.asSharedFlow()
 
     val sortOrder: StateFlow<SortOrder> = settingsRepository.songsSortOrder
     val favoriteSongIds: StateFlow<Set<Long>> = songCollectionRepository.favoriteSongIds
@@ -55,6 +59,15 @@ class SongsViewModel @Inject constructor(
         }
     }
 
+    fun playAll() {
+        val queue = songs.value
+        val firstSong = queue.firstOrNull() ?: return
+        viewModelScope.launch {
+            playerController.play(firstSong, queue)
+            songCollectionRepository.recordRecentlyPlayed(firstSong.id)
+        }
+    }
+
     fun setSortOrder(order: SortOrder) {
         settingsRepository.setSongsSortOrder(order)
     }
@@ -75,7 +88,13 @@ class SongsViewModel @Inject constructor(
 
     fun deleteSong(song: Song) {
         viewModelScope.launch {
-            mediaStoreRepository.deleteSong(song)
+            when (val result = mediaStoreRepository.deleteSong(song)) {
+                DeleteSongResult.Deleted,
+                DeleteSongResult.Failed -> Unit
+                is DeleteSongResult.NeedsUserConsent -> {
+                    _deletePermissionRequests.emit(result.intentSender)
+                }
+            }
         }
     }
 
@@ -104,6 +123,7 @@ class SongsViewModel @Inject constructor(
             SortOrder.ALBUM_DESC -> sortedByDescending { it.album.lowercase() }
             SortOrder.DURATION_ASC -> sortedBy { it.duration }
             SortOrder.DURATION_DESC -> sortedByDescending { it.duration }
+            SortOrder.DATE_ADDED_ASC -> sortedBy { it.dateAdded }
             SortOrder.DATE_ADDED_DESC -> sortedByDescending { it.dateAdded }
         }
     }

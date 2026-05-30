@@ -146,7 +146,12 @@ class QueueManager @Inject constructor() {
     }
 
     fun toggleShuffle() {
-        _shuffleEnabled.value = !_shuffleEnabled.value
+        setShuffleEnabled(!_shuffleEnabled.value)
+    }
+
+    fun setShuffleEnabled(enabled: Boolean) {
+        if (_shuffleEnabled.value == enabled) return
+        _shuffleEnabled.value = enabled
 
         if (_shuffleEnabled.value) {
             // Save original queue and shuffle

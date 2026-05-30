@@ -10,11 +10,13 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.exoplayer.ExoPlayer
 import com.abra.musica.data.model.Song
 import com.abra.musica.data.model.albumArtUri
+import com.abra.musica.data.repository.SettingsRepository
 import com.abra.musica.data.repository.SongCollectionRepository
 import com.abra.musica.service.MusicService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,9 +32,11 @@ class PlayerControllerImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val player: ExoPlayer,
     private val queueManager: QueueManager,
-    private val songCollectionRepository: SongCollectionRepository
+    private val songCollectionRepository: SongCollectionRepository,
+    private val settingsRepository: SettingsRepository
 ) : PlayerController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var sleepTimerJob: Job? = null
 
     private val _currentSong = MutableStateFlow<Song?>(null)
     override val currentSong: StateFlow<Song?> = _currentSong.asStateFlow()
@@ -49,13 +53,25 @@ class PlayerControllerImpl @Inject constructor(
     private val _duration = MutableStateFlow(0L)
     override val duration: StateFlow<Long> = _duration.asStateFlow()
 
-    private val _repeatMode = MutableStateFlow(RepeatMode.OFF)
+    private val _repeatMode = MutableStateFlow(settingsRepository.repeatMode.value)
     override val repeatMode: StateFlow<RepeatMode> = _repeatMode.asStateFlow()
 
-    private val _shuffleEnabled = MutableStateFlow(false)
+    private val _shuffleEnabled = MutableStateFlow(settingsRepository.shuffleEnabled.value)
     override val shuffleEnabled: StateFlow<Boolean> = _shuffleEnabled.asStateFlow()
 
+    private val _sleepTimerRemainingMs = MutableStateFlow(0L)
+    override val sleepTimerRemainingMs: StateFlow<Long> = _sleepTimerRemainingMs.asStateFlow()
+
     init {
+        queueManager.setRepeatMode(_repeatMode.value)
+        player.repeatMode = when (_repeatMode.value) {
+            RepeatMode.OFF -> Player.REPEAT_MODE_OFF
+            RepeatMode.ONE -> Player.REPEAT_MODE_ONE
+            RepeatMode.ALL -> Player.REPEAT_MODE_ALL
+        }
+        queueManager.setShuffleEnabled(_shuffleEnabled.value)
+        player.shuffleModeEnabled = _shuffleEnabled.value
+
         player.addListener(
             object : Player.Listener {
                 override fun onPlaybackStateChanged(playbackState: Int) {
@@ -134,6 +150,7 @@ class PlayerControllerImpl @Inject constructor(
 
     override fun setRepeatMode(mode: RepeatMode) {
         _repeatMode.value = mode
+        settingsRepository.setRepeatMode(mode)
         queueManager.setRepeatMode(mode)
         player.repeatMode = when (mode) {
             RepeatMode.OFF -> Player.REPEAT_MODE_OFF
@@ -144,6 +161,7 @@ class PlayerControllerImpl @Inject constructor(
 
     override fun toggleShuffle() {
         _shuffleEnabled.value = !_shuffleEnabled.value
+        settingsRepository.setShuffleEnabled(_shuffleEnabled.value)
         queueManager.toggleShuffle()
         player.shuffleModeEnabled = _shuffleEnabled.value
     }
@@ -170,6 +188,33 @@ class PlayerControllerImpl @Inject constructor(
         if (from in 0 until player.mediaItemCount && to in 0 until player.mediaItemCount) {
             player.moveMediaItem(from, to)
         }
+    }
+
+    override fun setSleepTimer(durationMs: Long) {
+        sleepTimerJob?.cancel()
+        val sanitizedDurationMs = durationMs.coerceAtLeast(0L)
+        if (sanitizedDurationMs == 0L) {
+            _sleepTimerRemainingMs.value = 0L
+            return
+        }
+        sleepTimerJob = scope.launch {
+            var remainingMs = sanitizedDurationMs
+            _sleepTimerRemainingMs.value = remainingMs
+            while (remainingMs > 0L && isActive) {
+                delay(1_000L)
+                remainingMs = (remainingMs - 1_000L).coerceAtLeast(0L)
+                _sleepTimerRemainingMs.value = remainingMs
+            }
+            if (isActive) {
+                player.pause()
+            }
+        }
+    }
+
+    override fun cancelSleepTimer() {
+        sleepTimerJob?.cancel()
+        sleepTimerJob = null
+        _sleepTimerRemainingMs.value = 0L
     }
 
     private fun Song.toMediaItem(): MediaItem {
