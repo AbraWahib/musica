@@ -30,6 +30,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.abra.musica.R
 import com.abra.musica.data.model.Song
+import com.abra.musica.ui.components.SongItemEvent
 import com.abra.musica.ui.components.SongListItem
 
 @Composable
@@ -104,8 +105,19 @@ private fun ArtistDetailContent(
                 items(uiState.songs, key = { it.id }) { song ->
                     SongListItem(
                         song = song,
-                        onClick = { onSongClick(song) },
-                        onGoToAlbum = { onGoToAlbum(song.albumId) }
+                        onEvent = { event ->
+                            when (event) {
+                                SongItemEvent.OnClick -> onSongClick(song)
+                                SongItemEvent.OnGoToAlbum -> onGoToAlbum(song.albumId)
+                                SongItemEvent.OnPlayNext,
+                                SongItemEvent.OnAddToQueue,
+                                SongItemEvent.OnToggleFavorite,
+                                SongItemEvent.OnGoToArtist,
+                                SongItemEvent.OnAddToPlaylist,
+                                SongItemEvent.OnShare,
+                                SongItemEvent.OnDelete -> Unit
+                            }
+                        }
                     )
                 }
             }

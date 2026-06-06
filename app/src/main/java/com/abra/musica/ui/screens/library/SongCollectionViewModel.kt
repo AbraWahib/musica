@@ -8,10 +8,17 @@ import com.abra.musica.player.PlayerController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class SongCollectionUiState(
+    val songs: List<Song> = emptyList(),
+    val favoriteSongIds: Set<Long> = emptySet()
+)
 
 @HiltViewModel
 class SongCollectionViewModel @Inject constructor(
@@ -26,6 +33,30 @@ class SongCollectionViewModel @Inject constructor(
     val favoriteSongIds: StateFlow<Set<Long>> = songCollectionRepository.favoriteSongIds
         .map { it.toSet() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    val favoriteSongsUiState: StateFlow<SongCollectionUiState> = combine(
+        favoriteSongs,
+        favoriteSongIds
+    ) { songs, favoriteSongIds ->
+        SongCollectionUiState(
+            songs = songs,
+            favoriteSongIds = favoriteSongIds
+        )
+    }
+        .catch { emit(SongCollectionUiState()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SongCollectionUiState())
+
+    val recentlyPlayedUiState: StateFlow<SongCollectionUiState> = combine(
+        recentlyPlayedSongs,
+        favoriteSongIds
+    ) { songs, favoriteSongIds ->
+        SongCollectionUiState(
+            songs = songs,
+            favoriteSongIds = favoriteSongIds
+        )
+    }
+        .catch { emit(SongCollectionUiState()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SongCollectionUiState())
 
     fun playFavoriteSong(song: Song) {
         play(song, favoriteSongs.value)

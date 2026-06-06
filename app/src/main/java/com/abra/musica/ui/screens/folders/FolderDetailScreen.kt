@@ -1,4 +1,4 @@
-package com.abra.musica.ui.screens.albums
+package com.abra.musica.ui.screens.folders
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -34,31 +34,28 @@ import com.abra.musica.ui.components.SongItemEvent
 import com.abra.musica.ui.components.SongListItem
 
 @Composable
-fun AlbumDetailScreen(
+fun FolderDetailScreen(
     onBackClick: () -> Unit,
-    onGoToArtist: (Long) -> Unit,
-    viewModel: AlbumDetailViewModel = hiltViewModel()
+    viewModel: FolderDetailViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    AlbumDetailContent(
+    FolderDetailContent(
         uiState = uiState,
         onBackClick = onBackClick,
-        onSongClick = viewModel::playSong,
-        onGoToArtist = onGoToArtist
+        onSongClick = viewModel::playSong
     )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AlbumDetailContent(
-    uiState: AlbumDetailUiState,
+private fun FolderDetailContent(
+    uiState: FolderDetailUiState,
     onBackClick: () -> Unit,
-    onSongClick: (Song) -> Unit,
-    onGoToArtist: (Long) -> Unit
+    onSongClick: (Song) -> Unit
 ) {
     val listState = rememberLazyListState()
-    val title = uiState.title.ifBlank { stringResource(R.string.albums) }
+    val title = uiState.name.ifBlank { stringResource(R.string.folders) }
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
 
     Scaffold(
@@ -88,9 +85,9 @@ private fun AlbumDetailContent(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Default.Album,
+                    imageVector = Icons.Default.Folder,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else {
@@ -108,11 +105,11 @@ private fun AlbumDetailContent(
                         onEvent = { event ->
                             when (event) {
                                 SongItemEvent.OnClick -> onSongClick(song)
-                                SongItemEvent.OnGoToArtist -> onGoToArtist(song.artistId)
                                 SongItemEvent.OnPlayNext,
                                 SongItemEvent.OnAddToQueue,
                                 SongItemEvent.OnToggleFavorite,
                                 SongItemEvent.OnGoToAlbum,
+                                SongItemEvent.OnGoToArtist,
                                 SongItemEvent.OnAddToPlaylist,
                                 SongItemEvent.OnShare,
                                 SongItemEvent.OnDelete -> Unit

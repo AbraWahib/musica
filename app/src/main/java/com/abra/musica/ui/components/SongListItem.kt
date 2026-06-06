@@ -1,6 +1,5 @@
 package com.abra.musica.ui.components
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.fadeIn
@@ -48,24 +47,15 @@ import com.abra.musica.data.model.albumArtUri
 @Composable
 fun SongListItem(
     song: Song,
-    onClick: () -> Unit = {},
     isFavorite: Boolean = false,
     showOverflowMenu: Boolean = true,
-    onPlayNext: () -> Unit = {},
-    onAddToQueue: () -> Unit = {},
-    onAddToPlaylist: () -> Unit = {},
-    onToggleFavorite: () -> Unit = {},
-    onGoToAlbum: () -> Unit = {},
-    onGoToArtist: () -> Unit = {},
-    onShare: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onEvent: (SongItemEvent) -> Unit = {}
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                onClick()
-                Log.d("Play Song", "SongListItem: ${song.title}")
+                onEvent(SongItemEvent.OnClick)
             }
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -124,14 +114,14 @@ fun SongListItem(
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.play_next)) },
                     onClick = {
-                        onPlayNext()
+                        onEvent(SongItemEvent.OnPlayNext)
                         showMenu = false
                     }
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.add_to_queue)) },
                     onClick = {
-                        onAddToQueue()
+                        onEvent(SongItemEvent.OnAddToQueue)
                         showMenu = false
                     }
                 )
@@ -156,42 +146,42 @@ fun SongListItem(
                         )
                     },
                     onClick = {
-                        onToggleFavorite()
+                        onEvent(SongItemEvent.OnToggleFavorite)
                         showMenu = false
                     }
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.add_to_playlist)) },
                     onClick = {
-                        onAddToPlaylist()
+                        onEvent(SongItemEvent.OnAddToPlaylist)
                         showMenu = false
                     }
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.go_to_album)) },
                     onClick = {
-                        onGoToAlbum()
+                        onEvent(SongItemEvent.OnGoToAlbum)
                         showMenu = false
                     }
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.go_to_artist)) },
                     onClick = {
-                        onGoToArtist()
+                        onEvent(SongItemEvent.OnGoToArtist)
                         showMenu = false
                     }
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.share)) },
                     onClick = {
-                        onShare()
+                        onEvent(SongItemEvent.OnShare)
                         showMenu = false
                     }
                 )
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.delete)) },
                     onClick = {
-                        onDelete()
+                        onEvent(SongItemEvent.OnDelete)
                         showMenu = false
                     }
                 )

@@ -8,8 +8,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
+
+data class FoldersUiState(
+    val folders: List<Folder> = emptyList()
+)
 
 @HiltViewModel
 class FoldersViewModel @Inject constructor(
@@ -19,4 +24,9 @@ class FoldersViewModel @Inject constructor(
     val folders: StateFlow<List<Folder>> = mediaStoreRepository.getFolders()
         .catch { emit(emptyList()) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val uiState: StateFlow<FoldersUiState> = mediaStoreRepository.getFolders()
+        .map { folders -> FoldersUiState(folders = folders) }
+        .catch { emit(FoldersUiState()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), FoldersUiState())
 }

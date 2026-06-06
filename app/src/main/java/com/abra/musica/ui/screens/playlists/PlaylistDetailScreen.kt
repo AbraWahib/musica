@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.abra.musica.R
+import com.abra.musica.ui.components.SongItemEvent
 import com.abra.musica.ui.components.SongListItem
 
 @Composable
@@ -93,9 +94,19 @@ fun PlaylistDetailScreen(
                 items(songs, key = { it.id }) { song ->
                     SongListItem(
                         song = song,
-                        onClick = { viewModel.playSong(song) },
-                        onGoToAlbum = {},
-                        onGoToArtist = {}
+                        onEvent = { event ->
+                            when (event) {
+                                SongItemEvent.OnClick -> viewModel.playSong(song)
+                                SongItemEvent.OnPlayNext,
+                                SongItemEvent.OnAddToQueue,
+                                SongItemEvent.OnToggleFavorite,
+                                SongItemEvent.OnGoToAlbum,
+                                SongItemEvent.OnGoToArtist,
+                                SongItemEvent.OnAddToPlaylist,
+                                SongItemEvent.OnShare,
+                                SongItemEvent.OnDelete -> Unit
+                            }
+                        }
                     )
                 }
             }

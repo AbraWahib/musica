@@ -1,0 +1,188 @@
+package com.abra.musica.ui.screens.search.components
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.abra.musica.R
+import com.abra.musica.data.model.Album
+import com.abra.musica.data.model.Artist
+import com.abra.musica.data.model.Playlist
+import com.abra.musica.ui.components.SongListItem
+import com.abra.musica.ui.screens.search.SearchResults
+
+@Composable
+fun SearchResultsList(
+    results: SearchResults,
+    favoriteSongIds: Set<Long>,
+    onEvent: (SearchScreenEvent) -> Unit
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 16.dp)
+    ) {
+        if (results.songs.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.songs)) }
+            items(results.songs.take(6), key = { it.id }) { song ->
+                SongListItem(
+                    song = song,
+                    isFavorite = song.id in favoriteSongIds,
+                    onEvent = { itemEvent ->
+                        onEvent(SearchScreenEvent.OnItemEvent(song, itemEvent))
+                    }
+                )
+            }
+        }
+
+        if (results.artists.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.artists)) }
+            items(results.artists.take(5), key = { it.id }) { artist ->
+                ArtistResultRow(
+                    artist = artist,
+                    onClick = { onEvent(SearchScreenEvent.OnArtistClicked(artist.id)) }
+                )
+            }
+        }
+
+        if (results.albums.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.albums)) }
+            items(results.albums.take(5), key = { it.id }) { album ->
+                AlbumResultRow(
+                    album = album,
+                    onClick = { onEvent(SearchScreenEvent.OnAlbumClicked(album.id)) }
+                )
+            }
+        }
+
+        if (results.playlists.isNotEmpty()) {
+            item { SearchSectionHeader(stringResource(R.string.playlists)) }
+            items(results.playlists.take(5), key = { it.id }) { playlist ->
+                PlaylistResultRow(
+                    playlist = playlist,
+                    onClick = { onEvent(SearchScreenEvent.OnPlayListClicked(playlist.id)) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SearchSectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(start = 16.dp, top = 18.dp, end = 16.dp, bottom = 6.dp)
+    )
+}
+
+@Composable
+private fun ArtistResultRow(
+    artist: Artist,
+    onClick: () -> Unit
+) {
+    SearchEntityRow(
+        icon = Icons.Default.Person,
+        title = artist.name,
+        subtitle = stringResource(R.string.artist_info, artist.albumCount, artist.songCount),
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun AlbumResultRow(
+    album: Album,
+    onClick: () -> Unit
+) {
+    SearchEntityRow(
+        icon = Icons.Default.Album,
+        title = album.title,
+        subtitle = album.artist,
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun PlaylistResultRow(
+    playlist: Playlist,
+    onClick: () -> Unit
+) {
+    SearchEntityRow(
+        icon = Icons.AutoMirrored.Filled.PlaylistPlay,
+        title = playlist.name,
+        subtitle = stringResource(R.string.song_count, playlist.songCount),
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun SearchEntityRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            modifier = Modifier.size(48.dp),
+            shape = MaterialTheme.shapes.medium,
+            color = MaterialTheme.colorScheme.secondaryContainer
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
+    }
+}
+

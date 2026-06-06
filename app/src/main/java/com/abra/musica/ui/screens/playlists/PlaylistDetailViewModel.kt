@@ -11,11 +11,17 @@ import com.abra.musica.player.PlayerController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class PlaylistDetailUiState(
+    val playlist: Playlist? = null,
+    val songs: List<Song> = emptyList()
+)
 
 @HiltViewModel
 class PlaylistDetailViewModel @Inject constructor(
@@ -38,6 +44,18 @@ class PlaylistDetailViewModel @Inject constructor(
         val songsById = allSongs.associateBy { it.id }
         playlistSongs.mapNotNull { playlistSong -> songsById[playlistSong.songId] }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val uiState: StateFlow<PlaylistDetailUiState> = combine(
+        playlist,
+        songs
+    ) { playlist, songs ->
+        PlaylistDetailUiState(
+            playlist = playlist,
+            songs = songs
+        )
+    }
+        .catch { emit(PlaylistDetailUiState()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PlaylistDetailUiState())
 
     fun playSong(song: Song) {
         viewModelScope.launch {

@@ -65,6 +65,20 @@ class SearchViewModel @Inject constructor(
         .map { it.toSet() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
+    val uiState: StateFlow<SearchUiState> = combine(
+        query,
+        results,
+        favoriteSongIds
+    ) { query, results, favoriteSongIds ->
+        SearchUiState(
+            query = query,
+            results = results,
+            favoriteSongIds = favoriteSongIds
+        )
+    }
+        .catch { emit(SearchUiState()) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SearchUiState())
+
     fun setQuery(newQuery: String) {
         _query.value = newQuery
     }
@@ -99,3 +113,9 @@ data class SearchResults(
     val isEmpty: Boolean
         get() = songs.isEmpty() && artists.isEmpty() && albums.isEmpty() && playlists.isEmpty()
 }
+
+data class SearchUiState(
+    val query: String = "",
+    val results: SearchResults = SearchResults(),
+    val favoriteSongIds: Set<Long> = emptySet()
+)

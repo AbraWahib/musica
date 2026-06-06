@@ -15,6 +15,11 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
+data class ArtistsUiState(
+    val artists: List<Artist> = emptyList(),
+    val isLoading: Boolean = true
+)
+
 @HiltViewModel
 class ArtistsViewModel @Inject constructor(
     private val mediaStoreRepository: MediaStoreRepository
@@ -31,4 +36,16 @@ class ArtistsViewModel @Inject constructor(
             emit(emptyList())
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val uiState: StateFlow<ArtistsUiState> = kotlinx.coroutines.flow.combine(
+        artists,
+        isLoading
+    ) { artists, isLoading ->
+        ArtistsUiState(
+            artists = artists,
+            isLoading = isLoading
+        )
+    }
+        .catch { emit(ArtistsUiState(isLoading = false)) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ArtistsUiState())
 }

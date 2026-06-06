@@ -4,18 +4,32 @@ import android.content.IntentSender
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.abra.musica.data.model.SortOrder
 import com.abra.musica.data.model.Song
+import com.abra.musica.data.model.SortOrder
+import com.abra.musica.data.repository.DeleteSongResult
 import com.abra.musica.data.repository.MediaStoreRepository
 import com.abra.musica.data.repository.PlaylistRepository
 import com.abra.musica.data.repository.SettingsRepository
 import com.abra.musica.data.repository.SongCollectionRepository
-import com.abra.musica.data.repository.DeleteSongResult
 import com.abra.musica.player.PlayerController
+import com.abra.musica.ui.screens.songs.components.SongsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 @HiltViewModel
 class SongsViewModel @Inject constructor(
@@ -48,8 +62,23 @@ class SongsViewModel @Inject constructor(
         .combine(sortOrder) { songs, order -> songs.sortedBy(order) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val currentSong: StateFlow<Song?> = playerController.currentSong
-    val isPlaying: StateFlow<Boolean> = playerController.isPlaying
+    val uiState: StateFlow<SongsUiState> = combine(
+        songs,
+        isLoading,
+        favoriteSongIds,
+        sortOrder,
+        playlists
+    ) { songs, isLoading, favoriteSongIds, sortOrder, playlists ->
+        SongsUiState(
+            songs = songs,
+            isLoading = isLoading,
+            favoriteSongIds = favoriteSongIds,
+            sortOrder = sortOrder,
+            playlists = playlists
+        )
+    }
+        .catch { emit(SongsUiState(isLoading = false)) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), SongsUiState())
 
     fun playSong(song: Song) {
         viewModelScope.launch {
