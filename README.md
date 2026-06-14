@@ -23,11 +23,6 @@ Browse your local library by songs, albums, artists, and folders. Build playlist
 
 ---
 
-## Screenshots
-
-> _Screenshots coming soon — add device mockups here once the first build is ready._
-
----
 
 ## Features
 
